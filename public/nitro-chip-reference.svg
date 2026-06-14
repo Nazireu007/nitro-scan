@@ -1,0 +1,70 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 720 460" role="img" aria-label="Nitro glowing processor with circuit traces">
+  <defs>
+    <radialGradient id="bg" cx="50%" cy="58%" r="68%">
+      <stop offset="0" stop-color="#17345f"/>
+      <stop offset="0.42" stop-color="#08142b"/>
+      <stop offset="1" stop-color="#02040b"/>
+    </radialGradient>
+    <linearGradient id="cyan" x1="0" x2="1" y1="0" y2="0">
+      <stop offset="0" stop-color="#08243f" stop-opacity="0"/>
+      <stop offset="0.44" stop-color="#26d9ff"/>
+      <stop offset="1" stop-color="#26d9ff" stop-opacity="0"/>
+    </linearGradient>
+    <linearGradient id="magenta" x1="0" x2="1" y1="0" y2="1">
+      <stop offset="0" stop-color="#7b2cff" stop-opacity="0"/>
+      <stop offset="0.48" stop-color="#ff35d8"/>
+      <stop offset="1" stop-color="#26d9ff" stop-opacity="0.2"/>
+    </linearGradient>
+    <filter id="softGlow" x="-60%" y="-60%" width="220%" height="220%">
+      <feGaussianBlur stdDeviation="5" result="blur"/>
+      <feMerge>
+        <feMergeNode in="blur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+    <filter id="hotGlow" x="-80%" y="-80%" width="260%" height="260%">
+      <feGaussianBlur stdDeviation="13" result="blur"/>
+      <feMerge>
+        <feMergeNode in="blur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+  </defs>
+
+  <rect width="720" height="460" fill="url(#bg)"/>
+  <g opacity="0.38">
+    <path d="M20 76h160m360 0h160M50 126h108m404 0h108M92 326h112m312 0h112M32 378h160m336 0h160" stroke="#24527b" stroke-width="2"/>
+    <path d="M110 30v118m500-118v118M162 312v112m396-112v112" stroke="#24527b" stroke-width="2"/>
+  </g>
+
+  <g fill="none" stroke-linecap="round" stroke-linejoin="round" filter="url(#softGlow)">
+    <path d="M360 220H82v-34H28" stroke="url(#cyan)" stroke-width="4"/>
+    <path d="M360 220H638v-34h54" stroke="url(#cyan)" stroke-width="4"/>
+    <path d="M360 220H112v64H34" stroke="url(#cyan)" stroke-width="4"/>
+    <path d="M360 220H608v64h78" stroke="url(#cyan)" stroke-width="4"/>
+    <path d="M360 220H158v-94H70" stroke="url(#cyan)" stroke-width="3"/>
+    <path d="M360 220H562v-94h88" stroke="url(#cyan)" stroke-width="3"/>
+    <path d="M360 220H170v132H76" stroke="url(#cyan)" stroke-width="3"/>
+    <path d="M360 220H550v132h94" stroke="url(#cyan)" stroke-width="3"/>
+    <path d="M360 220V56" stroke="url(#magenta)" stroke-width="4"/>
+    <path d="M360 220v190" stroke="url(#magenta)" stroke-width="5"/>
+    <path d="M330 220H210v-34h-38" stroke="#26d9ff" stroke-width="2.4"/>
+    <path d="M390 220h120v-34h38" stroke="#26d9ff" stroke-width="2.4"/>
+    <path d="M330 236H218v52h-42" stroke="#26d9ff" stroke-width="2.4"/>
+    <path d="M390 236h112v52h42" stroke="#26d9ff" stroke-width="2.4"/>
+  </g>
+
+  <g filter="url(#hotGlow)">
+    <ellipse cx="360" cy="330" rx="78" ry="28" fill="#ff35d8" opacity="0.82"/>
+    <ellipse cx="360" cy="245" rx="138" ry="44" fill="#26d9ff" opacity="0.18"/>
+  </g>
+
+  <g transform="translate(360 218)">
+    <polygon points="-92,-42 0,-86 92,-42 0,4" fill="#101a38" stroke="#26d9ff" stroke-width="3" filter="url(#softGlow)"/>
+    <polygon points="-92,-42 0,4 92,-42 92,12 0,58 -92,12" fill="#070b1e" stroke="#ff35d8" stroke-width="3" filter="url(#softGlow)"/>
+    <polygon points="-54,-28 0,-54 54,-28 0,-2" fill="#1d2853" stroke="#26d9ff" stroke-width="2"/>
+    <rect x="-24" y="-35" width="48" height="34" rx="5" fill="#101b3f" stroke="#ff35d8" stroke-width="2.2" filter="url(#softGlow)"/>
+    <path d="M-72 -36h-38m182 0h38M-58 -20h-46m162 0h46M-38 -5h-52m128 0h52" stroke="#26d9ff" stroke-width="3" stroke-linecap="round"/>
+    <path d="M-58 18h-48m164 0h48M-34 34h-52m120 0h52" stroke="#ff35d8" stroke-width="3" stroke-linecap="round"/>
+  </g>
+</svg>

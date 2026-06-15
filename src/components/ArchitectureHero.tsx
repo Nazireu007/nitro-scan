@@ -428,19 +428,18 @@ function ArchitecturePanel({ result, scenario }: { result: DiagnosticResult; sce
               <stop offset="0.72" stopColor="#22d3ee" stopOpacity="0.92" />
               <stop offset="1" stopColor="#a855f7" stopOpacity="0.82" />
             </linearGradient>
-            <marker id="archArrow" markerHeight="5" markerWidth="6" orient="auto" refX="5.4" refY="2.5">
-              <path d="M0,0 L6,2.5 L0,5 Z" />
+            <marker id="archArrow" markerHeight="8" markerWidth="8" orient="auto" refX="7" refY="4">
+              <path d="M0,0 L8,4 L0,8 Z" />
             </marker>
           </defs>
-          <path d="M198 92 H265" />
-          <path d="M455 92 H518" />
-          <path d="M112 136 V187" />
-          <path d="M606 136 V180" />
-          <path d="M360 136 V175 H279 V218" />
-          <path d="M360 136 V176 H438 V218" />
-          <path d="M206 224 H208" />
-          <path d="M350 250 H365" />
-          <path d="M511 238 H540 V258" />
+          <path d="M199 86 H266" />
+          <path d="M454 86 H518" />
+          <path d="M112 128 V170 Q112 184 118 188" />
+          <path d="M360 128 V170 H279 V222" />
+          <path d="M360 128 V170 H438 V222" />
+          <path d="M606 128 V180" />
+          <path d="M279 222 V205 H438 V222" />
+          <path d="M438 222 V204 H602 V180" />
         </svg>
 
         <article className="arch-box arch-input">

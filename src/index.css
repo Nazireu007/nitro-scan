@@ -564,29 +564,29 @@ button {
 
 .architecture-wires {
   position: absolute;
-  inset: 1.2rem 1.35rem 1.15rem;
-  z-index: 3;
-  width: calc(100% - 2.7rem);
-  height: calc(100% - 2.35rem);
+  inset: 0;
+  z-index: 1;
+  width: 100%;
+  height: 100%;
   pointer-events: none;
 }
 
 .architecture-wires > path {
   fill: none;
   stroke: url("#archFlow");
-  stroke-width: 1.65;
+  stroke-width: 2.35;
   stroke-linecap: round;
   stroke-linejoin: round;
   marker-end: url("#archArrow");
-  filter: drop-shadow(0 0 3px rgba(34, 211, 238, 0.42));
-  opacity: 0.72;
+  filter: drop-shadow(0 0 5px rgba(34, 211, 238, 0.55));
+  opacity: 0.9;
 }
 
 .architecture-wires marker path {
   fill: #22d3ee;
   stroke: none;
-  opacity: 0.86;
-  filter: drop-shadow(0 0 3px rgba(34, 211, 238, 0.5));
+  opacity: 0.94;
+  filter: drop-shadow(0 0 5px rgba(34, 211, 238, 0.68));
 }
 
 .arch-box {
@@ -1232,7 +1232,7 @@ button {
 
 .logs-panel {
   right: 1.2%;
-  bottom: 10.6%;
+  bottom: 7.2%;
   width: 32.1%;
   height: 15.8%;
   border-color: rgba(45, 212, 191, 0.34);

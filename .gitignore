@@ -32,6 +32,9 @@ vite.config.d.ts
 tailwind.config.js
 tailwind.config.d.ts
 
+# Local archives
+*.zip
+
 # OS and editor files
 .DS_Store
 Thumbs.db

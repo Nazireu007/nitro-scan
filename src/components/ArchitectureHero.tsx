@@ -45,6 +45,8 @@ type FlowStep = {
   icon: LucideIcon;
 };
 
+const nitroCoreImage = `${import.meta.env.BASE_URL}nitro-core-chip.webp`;
+
 function metricValue(result: DiagnosticResult, label: string): string {
   return result.monitorMetrics.find((metric) => metric.label === label)?.value ?? 'n/a';
 }
@@ -371,7 +373,7 @@ function NitroCorePanel({ result }: { result: DiagnosticResult }) {
       >
         <div className="core-halo" aria-hidden="true" />
         <div className="core-grid-lines" aria-hidden="true" />
-        <img className="chip-reference-image" src="/nitro-core-chip.webp" alt="" aria-hidden="true" />
+        <img className="chip-reference-image" src={nitroCoreImage} alt="" aria-hidden="true" />
         <div className="core-static-rails" aria-hidden="true">
           <span className="rail rail-left" />
           <span className="rail rail-right" />

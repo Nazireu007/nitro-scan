@@ -50,8 +50,29 @@ type FlowStep = {
 
 const nitroCoreImage = `${import.meta.env.BASE_URL}nitro-core-chip.webp`;
 
+const investigationStatuses = ['EM ANÁLISE', 'PENDENTE', 'NA BANCADA', 'CONCLUÍDO'] as const;
+const investigationStatusClasses = ['state-active', 'state-pending', 'state-bench', 'state-done'] as const;
+
+function decimalComma(value: string): string {
+  return value.replace('.', ',');
+}
+
+function normalizeTechnicalText(value: string): string {
+  return value
+    .replace(/\bn\/a\b/gi, 'n/d')
+    .replace(/(\d+(?:[.,]\d+)?)\s*ohms?\b/gi, (_, amount: string) => `${decimalComma(amount)} Ω`)
+    .replace(/(\d+(?:[.,]\d+)?)\s*VA\b/g, (_, amount: string) => `${decimalComma(amount)} VA`)
+    .replace(/(\d+(?:[.,]\d+)?)\s*V\b/g, (_, amount: string) => `${decimalComma(amount)} V`)
+    .replace(/(\d+(?:[.,]\d+)?)\s*A\b/g, (_, amount: string) => `${decimalComma(amount)} A`)
+    .replace(/(\d+(?:[.,]\d+)?)\s*C\b/g, (_, amount: string) => `${decimalComma(amount)} °C`)
+    .replace(/Clock \/ Reset/g, 'Clock/Reset')
+    .replace(/Clock\/reset/g, 'Clock/Reset');
+}
+
 function metricValue(result: DiagnosticResult, label: string): string {
-  return result.monitorMetrics.find((metric) => metric.label === label)?.value ?? 'n/a';
+  const value = result.monitorMetrics.find((metric) => metric.label === label)?.value ?? 'n/a';
+
+  return translateMetricValue(value);
 }
 
 function clip(value: string, max = 96): string {
@@ -82,11 +103,11 @@ function fillStyle(value: number, delay = 0): CSSProperties {
 }
 
 function statusFromIndex(index: number): string {
-  return ['em análise', 'pendente', 'concluído'][index % 3];
+  return investigationStatuses[index % investigationStatuses.length];
 }
 
 function statusClass(index: number): string {
-  return ['state-active', 'state-pending', 'state-done'][index % 3];
+  return investigationStatusClasses[index % investigationStatusClasses.length];
 }
 
 function translateDiagnosticText(value: string): string {
@@ -102,11 +123,11 @@ function translateDiagnosticText(value: string): string {
     'SPI VCC exists while CPU remains cold, so corrupted firmware or missing SPI transaction is plausible.':
       'A alimentação SPI está presente, mas a CPU permanece fria; firmware corrompido ou ausência de transação SPI é uma hipótese plausível.',
     '3.3V and 1.2V are present, but CPU thermal response is cold and PFC_PCTL is not released.':
-      'As linhas de 3,3V e 1,2V estão presentes, mas a CPU permanece fria e o PFC_PCTL não é liberado.',
+      'As linhas de 3,3 V e 1,2 V estão presentes, mas a CPU permanece fria e o PFC_PCTL não é liberado.',
     '12V is absent at first, then rises when PFC_PCTL is forced. The power stage can generate the rail.':
-      'O 12V está ausente inicialmente, mas aparece quando o PFC_PCTL é forçado. O estágio de potência consegue gerar o trilho.',
+      'O trilho de 12 V está ausente inicialmente, mas aparece quando o PFC_PCTL é forçado. O estágio de potência consegue gerar o trilho.',
     'Clock/reset chain requires direct probing.':
-      'A cadeia de clock/reset exige medição direta.',
+      'A cadeia de Clock/Reset exige medição direta.',
     'Secondary rails are blocked by missing command':
       'Trilhos secundários bloqueados por comando ausente.',
     'A missing clock or stuck reset can prevent the CPU from executing firmware.':
@@ -121,7 +142,7 @@ function translateDiagnosticText(value: string): string {
     'Firmware SPI': 'Firmware SPI',
     'Boot/Control Logic': 'Lógica de boot/controle',
     'CPU Boot Failure': 'Falha de inicialização da CPU',
-    'LG CJ87 Boot Failure': 'Falha de boot LG CJ87',
+    'LG CJ87 Boot Failure': 'Falha de boot/controle LG CJ87',
     'Logic rails present with cold CPU': 'Trilhos lógicos presentes com CPU fria',
     'Buck converter no output': 'Conversor Buck sem saída',
     'Linear regulator no output': 'Regulador linear sem saída',
@@ -129,10 +150,33 @@ function translateDiagnosticText(value: string): string {
   const translated = exactTranslations[value];
 
   if (translated) {
-    return translated;
+    return normalizeTechnicalText(translated);
   }
 
-  return value
+  return normalizeTechnicalText(value
+    .replace(/Buck output resistance/g, 'Resistência de saída do Buck')
+    .replace(/Buck input current/g, 'Corrente de entrada do Buck')
+    .replace(/Buck Converter/g, 'Conversor Buck')
+    .replace(/Buck VIN/g, 'VIN do Buck')
+    .replace(/Buck ENABLE/g, 'ENABLE do Buck')
+    .replace(/Buck VOUT/g, 'VOUT do Buck')
+    .replace(/LDO output resistance/g, 'Resistência de saída do LDO')
+    .replace(/LDO input current/g, 'Corrente de entrada do LDO')
+    .replace(/LDO Regulator/g, 'Regulador LDO')
+    .replace(/LDO input/g, 'Entrada do LDO')
+    .replace(/LDO enable/g, 'Enable do LDO')
+    .replace(/LDO output/g, 'Saída do LDO')
+    .replace(/L304 output resistance/g, 'Resistência de saída L304')
+    .replace(/L304 switching activity/g, 'Atividade de chaveamento L304')
+    .replace(/Board current draw/g, 'Corrente da placa')
+    .replace(/CPU thermal response/g, 'Resposta térmica da CPU')
+    .replace(/PFC_PCTL command/g, 'Comando PFC_PCTL')
+    .replace(/SPI VCC/g, 'VCC da SPI')
+    .replace(/ and /g, ' e ')
+    .replace(/, but /g, ', mas ')
+    .replace(/ are valid/g, ' estão válidos')
+    .replace(/ is valid/g, ' está válido')
+    .replace(/ is absent/g, ' está ausente')
     .replace(/Shorted Rail/g, 'Trilho em curto')
     .replace(/Firmware SPI/g, 'Firmware SPI')
     .replace(/Boot\/Control Logic/g, 'Lógica de boot/controle')
@@ -163,7 +207,7 @@ function translateDiagnosticText(value: string): string {
     .replace(/resistance/g, 'resistência')
     .replace(/rail/g, 'trilho')
     .replace(/CPU remains cold/g, 'CPU permanece fria')
-    .replace(/low-resistance or current-collapse criteria/g, 'critérios de baixa resistência ou colapso por corrente');
+    .replace(/low-resistance or current-collapse criteria/g, 'critérios de baixa resistência ou colapso por corrente'));
 }
 
 function translateActionText(value: string): string {
@@ -192,15 +236,20 @@ function translateActionText(value: string): string {
       'Isolar capacitores e cargas posteriores do trilho em queda.',
     'Measure the resistance again after removing suspicious loads.':
       'Medir a resistência novamente após remover cargas suspeitas.',
+    'Measure resistance again after removing suspect load sections.':
+      'Medir a resistência novamente após isolar seções de carga suspeitas.',
   };
   const translated = exactTranslations[value];
 
   if (translated) {
-    return translated;
+    return normalizeTechnicalText(translated);
   }
 
-  return value
+  return normalizeTechnicalText(value
     .replace(/^Check (.+) feedback path, switching\/regulation pin and output capacitor ESR\.$/, 'Verificar caminho de feedback de $1, pino de chaveamento/regulação e ESR do capacitor de saída.')
+    .replace(/Buck Converter/g, 'Conversor Buck')
+    .replace(/LDO Regulator/g, 'Regulador LDO')
+    .replace(/L304 Secondary Rail/g, 'Trilho secundário L304')
     .replace(/Trace/g, 'Rastrear')
     .replace(/Probe/g, 'Medir')
     .replace(/Check/g, 'Verificar')
@@ -214,44 +263,62 @@ function translateActionText(value: string): string {
     .replace(/reset line release/g, 'liberação da linha de reset')
     .replace(/crystal\/clock activity/g, 'atividade do cristal/clock')
     .replace(/power-on/g, 'energização')
-    .replace(/additional voltage, resistance and control-signal measurements/g, 'medições adicionais de tensão, resistência e sinais de controle');
+    .replace(/additional voltage, resistance and control-signal measurements/g, 'medições adicionais de tensão, resistência e sinais de controle'));
 }
 
 function translateLogMessage(value: string): string {
   const exactTranslations: Record<string, string> = {
-    'PFC_PCTL forced -> 12V rail active': 'PFC_PCTL forçado -> trilho 12V ativo',
+    'PFC_PCTL forced -> 12V rail active': 'PFC_PCTL forçado -> trilho de 12 V ativo',
     'Power supply classified as functional': 'Fonte classificada como funcional',
     'Main board not releasing enable signals': 'Placa principal não libera sinais de enable',
     'Probable short detected on target rail': 'Curto provável detectado no trilho alvo',
-    'Clock/reset anomaly detected': 'Anomalia de clock/reset detectada',
-    '3.3V rail detected': 'Trilho 3,3V detectado',
-    '1.2V core rail detected': 'Trilho core 1,2V detectado',
-    '5.1VA Standby detected': '5,1VA em espera detectado',
-    '5.1VA standby detected': '5,1VA em espera detectado',
-    '14VA Input detected': 'Entrada 14VA detectada',
+    'Clock/reset anomaly detected': 'Anomalia de Clock/Reset detectada',
+    '3.3V rail detected': 'Trilho de 3,3 V detectado',
+    '1.2V core rail detected': 'Trilho principal de 1,2 V detectado',
+    '5.1VA Standby detected': 'Trilho de 5,1 VA em espera detectado',
+    '5.1VA standby detected': 'Trilho de 5,1 VA em espera detectado',
+    '14VA Input detected': 'Entrada de 14 VA detectada',
     'PFC command absent': 'Comando PFC ausente',
     'Firmware SPI suspected': 'Firmware SPI suspeito',
   };
   const translated = exactTranslations[value];
 
   if (translated) {
-    return translated;
+    return normalizeTechnicalText(translated);
   }
 
-  return value
+  return normalizeTechnicalText(value
+    .replace(/Buck output resistance/g, 'Resistência de saída do Buck')
+    .replace(/Buck input current/g, 'Corrente de entrada do Buck')
+    .replace(/Buck Converter/g, 'Conversor Buck')
+    .replace(/Buck VIN/g, 'VIN do Buck')
+    .replace(/Buck ENABLE/g, 'ENABLE do Buck')
+    .replace(/Buck VOUT/g, 'VOUT do Buck')
+    .replace(/LDO output resistance/g, 'Resistência de saída do LDO')
+    .replace(/LDO input current/g, 'Corrente de entrada do LDO')
+    .replace(/LDO Regulator/g, 'Regulador LDO')
+    .replace(/LDO input/g, 'Entrada do LDO')
+    .replace(/LDO enable/g, 'Enable do LDO')
+    .replace(/LDO output/g, 'Saída do LDO')
+    .replace(/L304 output resistance/g, 'Resistência de saída L304')
+    .replace(/L304 switching activity/g, 'Atividade de chaveamento L304')
+    .replace(/Board current draw/g, 'Corrente da placa')
+    .replace(/CPU thermal response/g, 'Resposta térmica da CPU')
+    .replace(/PFC_PCTL command/g, 'Comando PFC_PCTL')
+    .replace(/SPI VCC/g, 'VCC da SPI')
     .replace(/Target rail voltage/g, 'Tensão do trilho alvo')
     .replace(/target rail/g, 'trilho alvo')
     .replace(/Injected current/g, 'Corrente injetada')
     .replace(/Rail resistance/g, 'Resistência do trilho')
-    .replace(/5\.1VA Standby/g, '5,1VA em espera')
-    .replace(/5\.1VA standby/g, '5,1VA em espera')
+    .replace(/5\.1VA Standby/g, 'Trilho de 5,1 VA em espera')
+    .replace(/5\.1VA standby/g, 'Trilho de 5,1 VA em espera')
     .replace(/Standby/g, 'Espera')
     .replace(/standby/g, 'espera')
-    .replace(/14VA Input/g, 'Entrada 14VA')
-    .replace(/12V rail initial/g, 'Trilho 12V inicial')
-    .replace(/12V rail after PFC_PCTL forced/g, 'Trilho 12V após PFC_PCTL forçado')
-    .replace(/3\.3V logic rail/g, 'Trilho lógico 3,3V')
-    .replace(/1\.2V core rail/g, 'Trilho core 1,2V')
+    .replace(/14VA Input/g, 'Entrada de 14 VA')
+    .replace(/12V rail initial/g, 'Trilho de 12 V inicial')
+    .replace(/12V rail after PFC_PCTL forced/g, 'Trilho de 12 V após PFC_PCTL forçado')
+    .replace(/3\.3V logic rail/g, 'Trilho lógico de 3,3 V')
+    .replace(/1\.2V core rail/g, 'Trilho principal de 1,2 V')
     .replace(/Power supply/g, 'Fonte')
     .replace(/Main board/g, 'Placa principal')
     .replace(/Boot\/Control Logic/g, 'Lógica de boot/controle')
@@ -261,11 +328,15 @@ function translateLogMessage(value: string): string {
     .replace(/active under forced command/g, 'ativo sob comando forçado')
     .replace(/not releasing enable signals/g, 'não libera sinais de enable')
     .replace(/classified as functional/g, 'classificada como funcional')
+    .replace(/valid/g, 'válido')
+    .replace(/inactive/g, 'inativo')
+    .replace(/low/g, 'baixo')
+    .replace(/high/g, 'alto')
     .replace(/suspected/g, 'suspeito')
     .replace(/detected/g, 'detectado')
     .replace(/absent/g, 'ausente')
     .replace(/active/g, 'ativo')
-    .replace(/rail/g, 'trilho');
+    .replace(/rail/g, 'trilho'));
 }
 
 function translateMetricLabel(value: string): string {
@@ -285,7 +356,17 @@ function translateMetricValue(value: string): string {
     'Probable short': 'Curto provável',
   };
 
-  return values[value] ?? value;
+  return normalizeTechnicalText(values[value] ?? value);
+}
+
+function terminalLineText(value: string): string {
+  const text = translateDiagnosticText(value).trim();
+
+  if (/:\s*\d+%$/.test(text)) {
+    return `${text}.`;
+  }
+
+  return text;
 }
 
 function logTime(index: number): string {
@@ -299,11 +380,11 @@ function logTime(index: number): string {
 function logTag(level: EngineLog['level']): string {
   const tags: Record<EngineLog['level'], string> = {
     AI: 'IA',
-    FAIL: 'AVISAR',
-    INFO: 'DIGITALIZAR',
-    SCAN: 'DIGITALIZAR',
+    FAIL: 'ALERTA',
+    INFO: 'MEDIÇÃO',
+    SCAN: 'MEDIÇÃO',
     TEST: 'TESTE',
-    WARN: 'AVISAR',
+    WARN: 'ALERTA',
   };
 
   return tags[level] ?? level;
@@ -568,7 +649,7 @@ function NitroCorePanel({ result }: { result: DiagnosticResult }) {
         </div>
         <div className="core-identity">
           <BrainCircuit className="h-7 w-7" aria-hidden="true" />
-          <strong>NITRO CORE</strong>
+          <strong>NÚCLEO NITRO</strong>
           <small>Núcleo de comportamento</small>
         </div>
         <div className="core-microstats">
@@ -585,7 +666,7 @@ function EvidencePanel({ result }: { result: DiagnosticResult }) {
     ...(result.conclusions.length > 0 ? result.conclusions : [result.summary]),
     ...result.suspects.map((suspect) => `${suspect.name}: ${suspect.probability}%`),
     ...result.evidence.map((evidence) => evidence.detail),
-  ].map(translateDiagnosticText);
+  ].map(terminalLineText);
 
   return (
     <Panel className="evidence-panel" title="EVIDÊNCIAS TÉCNICAS" icon={SquareTerminal}>
@@ -606,9 +687,9 @@ function KnowledgePanel() {
     ['Conversor Buck', 'POTÊNCIA', 'ativa'],
     ['LDO', 'REG', 'ativa'],
     ['Memória Flash SPI', 'DADOS', 'observada'],
-    ['Inicialização CPU', 'BOOT', 'ativa'],
+    ['Inicialização da CPU', 'BOOT', 'ativa'],
     ['Curto-circuito', 'CURTO', 'indexada'],
-    ['Clock / Reset', 'LÓGICA', 'ativa'],
+    ['Clock/Reset', 'LÓGICA', 'ativa'],
   ];
 
   return (

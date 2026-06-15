@@ -1220,7 +1220,9 @@ button {
 
 .evidence-panel .terminal-output {
   min-height: 0;
-  padding-right: 0.75rem;
+  gap: 0.46rem;
+  padding: 0.9rem 0.76rem 1.05rem 0.92rem;
+  padding-right: 0.72rem;
 }
 
 .terminal-output,
@@ -1257,6 +1259,52 @@ button {
   color: #dbeafe;
   overflow-wrap: anywhere;
   white-space: normal;
+}
+
+.evidence-panel .terminal-output p {
+  position: relative;
+  grid-template-columns: 2rem minmax(0, 1fr);
+  gap: 0.62rem;
+  align-items: start;
+  min-height: 2.05rem;
+  border: 1px solid rgba(34, 211, 238, 0.09);
+  border-radius: 6px;
+  padding: 0.46rem 0.58rem;
+  background:
+    linear-gradient(90deg, rgba(34, 211, 238, 0.07), transparent 38%),
+    rgba(2, 6, 23, 0.38);
+  box-shadow: inset 0 0 12px rgba(34, 211, 238, 0.035);
+}
+
+.evidence-panel .terminal-output p::before {
+  position: absolute;
+  top: 0.58rem;
+  bottom: 0.58rem;
+  left: 2.9rem;
+  width: 1px;
+  content: '';
+  background: linear-gradient(180deg, rgba(34, 211, 238, 0), rgba(34, 211, 238, 0.32), rgba(34, 211, 238, 0));
+}
+
+.evidence-panel .terminal-output span {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 1.2rem;
+  color: #67e8f9;
+  font-size: clamp(0.52rem, 0.58vw, 0.62rem);
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+  text-shadow: 0 0 7px rgba(34, 211, 238, 0.34);
+}
+
+.evidence-panel .terminal-output code {
+  color: #e0f2fe;
+  font-size: clamp(0.58rem, 0.66vw, 0.7rem);
+  font-weight: 760;
+  line-height: 1.36;
+  overflow-wrap: anywhere;
+  text-wrap: pretty;
 }
 
 .knowledge-panel {

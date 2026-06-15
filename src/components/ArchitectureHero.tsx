@@ -359,14 +359,59 @@ function translateMetricValue(value: string): string {
   return normalizeTechnicalText(values[value] ?? value);
 }
 
-function terminalLineText(value: string): string {
-  const text = translateDiagnosticText(value).trim();
+function evidenceLineText(value: string): string {
+  const exactEvidence: Record<string, string> = {
+    'Power supply classified as functional under forced-command test.':
+      'Fonte classificada como funcional no teste com comando forçado.',
+    'Main board is not initializing the boot/control sequence.':
+      'A placa principal não inicializa a sequência de boot/controle.',
+    '12V is absent at first, then rises when PFC_PCTL is forced. The power stage can generate the rail.':
+      'Trilho de 12 V ausente inicialmente; tensão aparece quando PFC_PCTL é forçado.',
+    '3.3V and 1.2V are present, but CPU thermal response is cold and PFC_PCTL is not released.':
+      'Linhas de 3,3 V e 1,2 V presentes, mas a CPU permanece sem inicialização.',
+    'SPI VCC exists while CPU remains cold, so corrupted firmware or missing SPI transaction is plausible.':
+      'SPI VCC detectado; CPU fria indica hipótese de Firmware SPI ou ausência de transação.',
+    'Clock/reset chain requires direct probing.':
+      'Clock/Reset exige medição direta na cadeia de inicialização.',
+    'A missing clock or stuck reset can prevent the CPU from executing firmware.':
+      'Clock ausente ou reset travado pode impedir a execução do firmware.',
+    'At least one secondary rail is inactive while a required enable/control command is absent.':
+      'Trilho secundário inativo com comando de enable/controle ausente.',
+    'Secondary rails are blocked by missing command':
+      'Trilhos secundários bloqueados por comando ausente.',
+    'Low resistance and/or high current with collapsing voltage indicates a probable short on the rail.':
+      'Baixa resistência e corrente elevada com queda de tensão indicam curto provável no trilho.',
+    'Probable short detected on the measured rail.':
+      'Curto provável detectado no trilho medido.',
+    'Insufficient evidence for a high-confidence classification.':
+      'Evidência insuficiente para classificação de alta confiança.',
+    'The captured measurements match a known diagnostic pattern.':
+      'Medições capturadas correspondem a um padrão diagnóstico conhecido.',
+  };
+  const text = exactEvidence[value] ?? translateDiagnosticText(value);
 
-  if (/:\s*\d+%$/.test(text)) {
-    return `${text}.`;
-  }
+  return normalizeTechnicalText(text)
+    .replace(/A placa principal não está inicializando/g, 'A placa principal não inicializa')
+    .replace(/As linhas de/g, 'Linhas de')
+    .replace(/estão presentes, mas a CPU permanece fria/g, 'presentes, mas a CPU permanece sem inicialização')
+    .replace(/estão válidos, mas/g, 'válidos;')
+    .replace(/está válido, mas/g, 'válido;')
+    .replace(/está ausente/g, 'ausente');
+}
 
-  return text;
+function evidenceSuspectLine(name: string, probability: number): string {
+  const labels: Record<string, string> = {
+    'Firmware SPI': 'Firmware SPI suspeito',
+    'Boot/Control Logic': 'Lógica de boot/controle suspeita',
+    'CPU Boot Failure': 'Falha na inicialização da CPU',
+    'Clock/Reset': 'Clock/Reset suspeito',
+    'Shorted Rail': 'Trilho em curto provável',
+    'Buck Converter': 'Conversor Buck suspeito',
+    'LDO Regulator': 'Regulador LDO suspeito',
+  };
+  const label = labels[name] ?? `${translateDiagnosticText(name)} suspeito`;
+
+  return `${normalizeTechnicalText(label)}: ${probability}%.`;
 }
 
 function logTime(index: number): string {
@@ -663,10 +708,10 @@ function NitroCorePanel({ result }: { result: DiagnosticResult }) {
 
 function EvidencePanel({ result }: { result: DiagnosticResult }) {
   const terminalLines = [
-    ...(result.conclusions.length > 0 ? result.conclusions : [result.summary]),
-    ...result.suspects.map((suspect) => `${suspect.name}: ${suspect.probability}%`),
-    ...result.evidence.map((evidence) => evidence.detail),
-  ].map(terminalLineText);
+    ...(result.conclusions.length > 0 ? result.conclusions : [result.summary]).map(evidenceLineText),
+    ...result.suspects.map((suspect) => evidenceSuspectLine(suspect.name, suspect.probability)),
+    ...result.evidence.map((evidence) => evidenceLineText(evidence.detail)),
+  ];
 
   return (
     <Panel className="evidence-panel" title="EVIDÊNCIAS TÉCNICAS" icon={SquareTerminal}>

@@ -5,17 +5,6 @@ const gapSegments = [
   'M50 79.36 V82.56',
 ];
 
-const nodePoints = [
-  [50, 17.44],
-  [50, 20.64],
-  [50, 38.08],
-  [50, 41.28],
-  [50, 58.72],
-  [50, 61.92],
-  [50, 79.36],
-  [50, 82.56],
-];
-
 export function DiagnosticFlowConnections() {
   return (
     <svg className="diagnostic-flow-connections" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">
@@ -38,11 +27,11 @@ export function DiagnosticFlowConnections() {
       </defs>
 
       {gapSegments.map((segment) => (
-        <path className="diagnostic-flow-line" d={segment} key={segment} markerEnd="url(#diagnosticFlowArrow)" />
+        <path className="diagnostic-flow-rail" d={segment} key={`rail-${segment}`} />
       ))}
 
-      {nodePoints.map(([cx, cy]) => (
-        <circle className="diagnostic-flow-node" cx={cx} cy={cy} key={`${cx}-${cy}`} r="1.12" />
+      {gapSegments.map((segment) => (
+        <path className="diagnostic-flow-line" d={segment} key={`line-${segment}`} markerEnd="url(#diagnosticFlowArrow)" />
       ))}
     </svg>
   );

@@ -751,15 +751,25 @@ button {
   overflow: visible;
 }
 
+.diagnostic-flow-rail,
 .diagnostic-flow-line {
   fill: none;
   stroke: url("#diagnosticFlowLine");
-  stroke-width: 2;
   stroke-linecap: square;
   stroke-linejoin: miter;
-  filter: url("#diagnosticFlowGlow");
-  opacity: 0.92;
   vector-effect: non-scaling-stroke;
+}
+
+.diagnostic-flow-rail {
+  stroke-width: 3;
+  filter: drop-shadow(0 0 6px rgba(34, 211, 238, 0.26));
+  opacity: 0.32;
+}
+
+.diagnostic-flow-line {
+  stroke-width: 2.15;
+  filter: url("#diagnosticFlowGlow");
+  opacity: 0.96;
 }
 
 .diagnostic-flow-connections marker path {
@@ -767,15 +777,6 @@ button {
   stroke: none;
   opacity: 0.92;
   filter: drop-shadow(0 0 4px rgba(34, 211, 238, 0.58));
-}
-
-.diagnostic-flow-node {
-  fill: #04111f;
-  stroke: #22d3ee;
-  stroke-width: 1;
-  filter: drop-shadow(0 0 4px rgba(34, 211, 238, 0.56));
-  opacity: 0.88;
-  vector-effect: non-scaling-stroke;
 }
 
 .flow-step {
@@ -801,21 +802,21 @@ button {
   position: absolute;
   left: 50%;
   z-index: 3;
-  width: 0.44rem;
-  height: 0.44rem;
-  border: 1px solid rgba(34, 211, 238, 0.82);
-  border-radius: 50%;
+  width: 2px;
+  height: 0.62rem;
+  border: 0;
+  border-radius: 999px;
   transform: translateX(-50%);
-  background: #04111f;
-  box-shadow: 0 0 8px rgba(34, 211, 238, 0.45);
+  background: linear-gradient(180deg, rgba(34, 211, 238, 0.06), rgba(34, 211, 238, 0.9), rgba(168, 85, 247, 0.5));
+  box-shadow: 0 0 7px rgba(34, 211, 238, 0.42);
 }
 
 .flow-port-top {
-  top: -0.23rem;
+  top: -0.31rem;
 }
 
 .flow-port-bottom {
-  bottom: -0.23rem;
+  bottom: -0.31rem;
 }
 
 .flow-step > div {

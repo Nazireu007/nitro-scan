@@ -560,26 +560,30 @@ button {
   height: 100%;
   min-height: 0;
   margin-top: 0;
+  background:
+    linear-gradient(rgba(34, 211, 238, 0.035) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(96, 165, 250, 0.03) 1px, transparent 1px);
+  background-size: 32px 32px;
 }
 
 .architecture-connections {
   position: absolute;
   inset: 0;
-  z-index: 2;
+  z-index: 1;
   width: 100%;
   height: 100%;
   pointer-events: none;
 }
 
-.architecture-connections > path {
+.architecture-route {
   fill: none;
-  stroke: #22d3ee;
-  stroke-width: 2.25;
-  stroke-linecap: round;
-  stroke-linejoin: round;
-  marker-end: url("#architectureArrow");
+  stroke: url("#architectureLine");
+  stroke-width: 2.2;
+  stroke-linecap: square;
+  stroke-linejoin: miter;
   filter: url("#architectureGlow");
-  opacity: 0.86;
+  opacity: 0.9;
+  vector-effect: non-scaling-stroke;
 }
 
 .architecture-connections marker path {
@@ -589,9 +593,18 @@ button {
   filter: drop-shadow(0 0 5px rgba(34, 211, 238, 0.68));
 }
 
+.architecture-port {
+  fill: #04111f;
+  stroke: #22d3ee;
+  stroke-width: 1.7;
+  filter: drop-shadow(0 0 5px rgba(34, 211, 238, 0.54));
+  opacity: 0.86;
+  vector-effect: non-scaling-stroke;
+}
+
 .arch-box {
   position: absolute;
-  z-index: 3;
+  z-index: 2;
   display: grid;
   min-width: 0;
   align-content: center;
@@ -600,7 +613,7 @@ button {
   overflow: hidden;
   border: 1px solid rgba(34, 211, 238, 0.24);
   border-radius: 8px;
-  padding: 0.84rem 0.8rem;
+  padding: 0.88rem 0.82rem;
   text-align: center;
   background:
     radial-gradient(circle at 50% 0%, rgba(34, 211, 238, 0.12), transparent 60%),
@@ -634,13 +647,13 @@ button {
   overflow-wrap: anywhere;
 }
 
-.arch-input { top: 15%; left: 3.6%; width: 24%; height: 26%; border-color: rgba(168, 85, 247, 0.38); }
-.arch-engine { top: 13.2%; left: 37%; width: 26%; height: 28%; border-color: rgba(34, 211, 238, 0.42); }
-.arch-diagnostic { top: 15%; right: 3.6%; width: 24.5%; height: 26%; border-color: rgba(34, 211, 238, 0.34); }
-.arch-cases { top: 60.8%; left: 4.2%; width: 24.5%; height: 22%; }
-.arch-library { top: 58.2%; right: 4.2%; width: 24.5%; height: 24%; border-color: rgba(34, 211, 238, 0.34); }
-.arch-signatures { bottom: 6%; left: 29%; width: 19.5%; height: 22.5%; border-color: rgba(168, 85, 247, 0.32); }
-.arch-history { bottom: 6%; right: 29%; width: 20.2%; height: 22.5%; }
+.arch-input { top: 10.5%; left: 3.4%; width: 23.5%; height: 23.8%; border-color: rgba(168, 85, 247, 0.38); }
+.arch-engine { top: 10.5%; left: 38.25%; width: 23.5%; height: 23.8%; border-color: rgba(34, 211, 238, 0.44); }
+.arch-diagnostic { top: 10.5%; right: 3.4%; width: 23.5%; height: 23.8%; border-color: rgba(34, 211, 238, 0.34); }
+.arch-cases { top: 62.5%; left: 3.4%; width: 23.5%; height: 20.8%; }
+.arch-library { top: 62.5%; right: 3.4%; width: 23.5%; height: 20.8%; border-color: rgba(34, 211, 238, 0.34); }
+.arch-signatures { top: 72%; left: 29.1%; width: 20.1%; height: 20.8%; border-color: rgba(168, 85, 247, 0.32); }
+.arch-history { top: 72%; right: 29.1%; width: 20.1%; height: 20.8%; }
 
 .flow-panel {
   top: 14.2%;
@@ -654,46 +667,88 @@ button {
   position: relative;
   z-index: 2;
   display: grid;
-  gap: 0.38rem;
-  padding: 0.78rem 0.95rem 0.9rem;
+  height: calc(100% - 2.82rem);
+  min-height: 22rem;
+  grid-template-rows: repeat(5, minmax(3.45rem, 1fr));
+  gap: 3.2%;
+  padding: 0.92rem 1rem 1rem;
 }
 
-.flow-pipeline::before {
+.diagnostic-flow-connections {
   position: absolute;
-  top: 1.15rem;
-  bottom: 1.15rem;
-  left: 2.55rem;
-  width: 2px;
-  content: '';
-  background: linear-gradient(180deg, #a855f7, #22d3ee, rgba(34, 211, 238, 0.12));
-  box-shadow: 0 0 11px rgba(34, 211, 238, 0.38);
+  inset: 0.92rem 1rem 1rem;
+  z-index: 1;
+  width: auto;
+  height: auto;
+  pointer-events: none;
+  overflow: visible;
+}
+
+.diagnostic-flow-line {
+  fill: none;
+  stroke: url("#diagnosticFlowLine");
+  stroke-width: 2;
+  stroke-linecap: square;
+  stroke-linejoin: miter;
+  filter: url("#diagnosticFlowGlow");
+  opacity: 0.92;
+  vector-effect: non-scaling-stroke;
+}
+
+.diagnostic-flow-connections marker path {
+  fill: #22d3ee;
+  stroke: none;
+  opacity: 0.92;
+  filter: drop-shadow(0 0 4px rgba(34, 211, 238, 0.58));
+}
+
+.diagnostic-flow-node {
+  fill: #04111f;
+  stroke: #22d3ee;
+  stroke-width: 1;
+  filter: drop-shadow(0 0 4px rgba(34, 211, 238, 0.56));
+  opacity: 0.88;
+  vector-effect: non-scaling-stroke;
 }
 
 .flow-step {
   position: relative;
+  z-index: 2;
   display: grid;
   grid-template-columns: auto minmax(0, 1fr);
-  gap: 0.58rem;
+  gap: 0.66rem;
   align-items: center;
-  min-height: 2.66rem;
+  min-height: 3.45rem;
   border: 1px solid rgba(148, 163, 184, 0.13);
   border-radius: 8px;
-  padding: 0.46rem 0.62rem;
-  background: rgba(2, 6, 23, 0.58);
-  box-shadow: inset 0 0 18px rgba(34, 211, 238, 0.04);
+  padding: 0.58rem 0.72rem;
+  background:
+    linear-gradient(145deg, rgba(4, 11, 24, 0.92), rgba(2, 6, 23, 0.88)),
+    rgba(2, 6, 23, 0.9);
+  box-shadow:
+    inset 0 0 18px rgba(34, 211, 238, 0.045),
+    0 0 12px rgba(34, 211, 238, 0.04);
 }
 
-.flow-step:not(:last-child)::after {
+.flow-port {
   position: absolute;
-  bottom: -0.5rem;
-  left: 1.42rem;
-  width: 0;
-  height: 0;
-  border-top: 6px solid rgba(34, 211, 238, 0.72);
-  border-right: 5px solid transparent;
-  border-left: 5px solid transparent;
-  content: '';
-  filter: drop-shadow(0 0 5px rgba(34, 211, 238, 0.62));
+  left: 50%;
+  z-index: 3;
+  width: 0.44rem;
+  height: 0.44rem;
+  border: 1px solid rgba(34, 211, 238, 0.82);
+  border-radius: 50%;
+  transform: translateX(-50%);
+  background: #04111f;
+  box-shadow: 0 0 8px rgba(34, 211, 238, 0.45);
+}
+
+.flow-port-top {
+  top: -0.23rem;
+}
+
+.flow-port-bottom {
+  bottom: -0.23rem;
 }
 
 .flow-step > div {
@@ -723,7 +778,7 @@ button {
   line-height: 1.12;
 }
 
-.flow-step span {
+.flow-step p span {
   display: block;
   margin-top: 0.12rem;
   color: #9fb2cd;
@@ -761,6 +816,7 @@ button {
     radial-gradient(circle, rgba(34, 211, 238, 0.28), transparent 55%),
     conic-gradient(from 90deg, transparent, rgba(34, 211, 238, 0.18), transparent, rgba(168, 85, 247, 0.2), transparent);
   filter: blur(0.2px);
+  animation: haloSpin 22s linear infinite;
 }
 
 .core-grid-lines {
@@ -798,6 +854,64 @@ button {
   mask-repeat: no-repeat;
 }
 
+.core-circuit-overlay {
+  position: absolute;
+  inset: -14% -28%;
+  z-index: 4;
+  width: auto;
+  height: auto;
+  pointer-events: none;
+  opacity: 0.78;
+  mix-blend-mode: screen;
+}
+
+.core-trace,
+.core-wave {
+  fill: none;
+  stroke-width: 2.2;
+  stroke-linecap: square;
+  stroke-linejoin: miter;
+  filter: drop-shadow(0 0 7px rgba(34, 211, 238, 0.38));
+  vector-effect: non-scaling-stroke;
+}
+
+.core-trace {
+  stroke: url("#coreTraceCyan");
+  stroke-dasharray: 34 18;
+  animation: coreTraceFlow 5.8s linear infinite;
+}
+
+.core-trace-right {
+  stroke: url("#coreTraceViolet");
+  animation-direction: reverse;
+}
+
+.core-trace-low {
+  opacity: 0.74;
+  animation-duration: 7.2s;
+}
+
+.core-wave {
+  stroke: rgba(34, 211, 238, 0.54);
+  stroke-width: 1.6;
+  stroke-dasharray: 10 18;
+  opacity: 0.64;
+  animation: coreWaveFlow 6.4s ease-in-out infinite;
+}
+
+.core-wave-right {
+  stroke: rgba(168, 85, 247, 0.52);
+  animation-delay: -3.2s;
+}
+
+.core-trace-node {
+  fill: #071626;
+  stroke: #22d3ee;
+  stroke-width: 1.4;
+  filter: drop-shadow(0 0 6px rgba(34, 211, 238, 0.56));
+  vector-effect: non-scaling-stroke;
+}
+
 .core-static-rails {
   position: absolute;
   inset: -64%;
@@ -819,7 +933,8 @@ button {
   box-shadow:
     0 0 12px rgba(34, 211, 238, 0.42),
     0 0 22px rgba(168, 85, 247, 0.16);
-  opacity: 0.78;
+  opacity: 0.58;
+  animation: coreLinkPulse 4.8s ease-in-out infinite;
 }
 
 .core-link-up {
@@ -920,21 +1035,45 @@ button {
   display: grid;
   justify-items: center;
   gap: 0.14rem;
-  min-width: min(62%, 13.5rem);
-  border: 1px solid rgba(34, 211, 238, 0.44);
-  border-radius: 12px;
-  padding: 0.62rem 0.78rem 0.68rem;
-  transform: translate(-50%, -44%);
+  min-width: min(58%, 13rem);
+  border: 1px solid rgba(34, 211, 238, 0.5);
+  border-radius: 10px;
+  padding: 0.68rem 0.84rem 0.72rem;
+  transform: translate(-50%, -50%);
   color: #ecfeff;
   background:
-    radial-gradient(circle at 50% 0%, rgba(34, 211, 238, 0.26), transparent 62%),
-    linear-gradient(145deg, rgba(4, 11, 24, 0.82), rgba(8, 11, 35, 0.72)),
-    rgba(2, 6, 23, 0.7);
+    linear-gradient(rgba(34, 211, 238, 0.08) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(168, 85, 247, 0.06) 1px, transparent 1px),
+    radial-gradient(circle at 50% 0%, rgba(34, 211, 238, 0.22), transparent 64%),
+    linear-gradient(145deg, rgba(4, 11, 24, 0.82), rgba(8, 11, 35, 0.68)),
+    rgba(2, 6, 23, 0.72);
+  background-size: 16px 16px, 16px 16px, auto, auto, auto;
   box-shadow:
-    0 0 28px rgba(34, 211, 238, 0.26),
-    0 0 42px rgba(168, 85, 247, 0.18),
-    inset 0 0 24px rgba(34, 211, 238, 0.12);
+    0 0 24px rgba(34, 211, 238, 0.26),
+    0 0 38px rgba(168, 85, 247, 0.16),
+    inset 0 0 20px rgba(34, 211, 238, 0.14);
   backdrop-filter: blur(8px);
+}
+
+.core-identity::before,
+.core-identity::after {
+  position: absolute;
+  top: 50%;
+  width: 2.7rem;
+  height: 1px;
+  content: '';
+  transform: translateY(-50%);
+  background: linear-gradient(90deg, transparent, rgba(34, 211, 238, 0.82));
+  box-shadow: 0 0 8px rgba(34, 211, 238, 0.5);
+}
+
+.core-identity::before {
+  right: 100%;
+}
+
+.core-identity::after {
+  left: 100%;
+  transform: translateY(-50%) scaleX(-1);
 }
 
 .core-identity svg {
@@ -1023,7 +1162,7 @@ button {
   display: grid;
   align-content: start;
   gap: 0.5rem;
-  padding: 0.95rem 1.08rem 1.1rem;
+  padding: 1rem 1.08rem 1.08rem;
   font-family: "JetBrains Mono", "SFMono-Regular", Consolas, monospace;
 }
 
@@ -1064,8 +1203,8 @@ button {
   position: relative;
   z-index: 2;
   display: grid;
-  gap: 0.32rem;
-  padding: 0.85rem 0.95rem 1rem;
+  gap: 0.42rem;
+  padding: 1rem 1.08rem 1.08rem;
 }
 
 .signature-table p {
@@ -1112,8 +1251,8 @@ button {
   position: relative;
   z-index: 2;
   display: grid;
-  gap: 0.62rem;
-  padding: 1.12rem 1.18rem 1.26rem;
+  gap: 0.66rem;
+  padding: 1.08rem;
 }
 
 .investigation-list p {
@@ -1173,8 +1312,8 @@ button {
   z-index: 2;
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 0.48rem;
-  padding: 0.75rem 0.9rem 0;
+  gap: 0.52rem;
+  padding: 1rem 1.08rem 0;
 }
 
 .analytics-cards div {
@@ -1204,7 +1343,7 @@ button {
   position: relative;
   z-index: 2;
   height: 3.25rem;
-  margin: 0.52rem 0.9rem 0;
+  margin: 0.58rem 1.08rem 0;
   border: 1px solid rgba(34, 211, 238, 0.12);
   border-radius: 8px;
   background:
@@ -1230,7 +1369,7 @@ button {
   grid-template-columns: auto 1fr 1fr;
   gap: 0.58rem;
   align-items: center;
-  padding: 0.45rem 0.9rem 0.68rem;
+  padding: 0.58rem 1.08rem 1.02rem;
 }
 
 .analytics-donut {
@@ -1291,8 +1430,8 @@ button {
 }
 
 .live-log-lines {
-  gap: 0.36rem;
-  padding: 0.78rem 0.62rem 1rem;
+  gap: 0.4rem;
+  padding: 1rem 0.82rem 1.08rem;
 }
 
 .live-log-lines p {
@@ -1473,16 +1612,16 @@ button {
     display: grid;
     width: min(100%, 1580px);
     height: auto;
-    min-height: 1180px;
+    min-height: 1220px;
     grid-template-areas:
       "brand architecture flow"
       "monitor architecture flow"
       "evidence core analytics"
       "knowledge investigation logs"
       "dock dock dock";
-    grid-template-columns: minmax(265px, 0.85fr) minmax(548px, 1.45fr) minmax(315px, 1fr);
-    grid-template-rows: 96px 390px 285px 250px 74px;
-    gap: 24px 18px;
+    grid-template-columns: minmax(280px, 0.9fr) minmax(560px, 1.44fr) minmax(330px, 1fr);
+    grid-template-rows: 98px 396px 292px 252px 76px;
+    gap: 22px;
     padding: 24px;
     align-items: stretch;
   }
@@ -1578,7 +1717,7 @@ button {
   .nitro-core-stage {
     width: min(100%, 560px);
     height: 100%;
-    min-height: 285px;
+    min-height: 292px;
   }
 
   .chip-reference-image {
@@ -1605,7 +1744,7 @@ button {
 
   .investigation-list {
     gap: 0.72rem;
-    padding: 1.18rem 1.22rem 1.34rem;
+    padding: 1.08rem;
   }
 
   .investigation-list p {
@@ -1731,6 +1870,37 @@ button {
       0 0 92px rgba(34, 211, 238, 0.56),
       0 0 145px rgba(168, 85, 247, 0.32),
       inset 0 0 62px rgba(34, 211, 238, 0.22);
+  }
+}
+
+@keyframes coreTraceFlow {
+  from {
+    stroke-dashoffset: 0;
+  }
+  to {
+    stroke-dashoffset: -104;
+  }
+}
+
+@keyframes coreWaveFlow {
+  0%, 100% {
+    stroke-dashoffset: 0;
+    opacity: 0.46;
+  }
+  50% {
+    stroke-dashoffset: -56;
+    opacity: 0.78;
+  }
+}
+
+@keyframes coreLinkPulse {
+  0%, 100% {
+    opacity: 0.38;
+    filter: brightness(0.92);
+  }
+  50% {
+    opacity: 0.72;
+    filter: brightness(1.22);
   }
 }
 

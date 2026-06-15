@@ -23,6 +23,7 @@ import {
   type LucideIcon,
 } from 'lucide-react';
 import { ArchitectureConnections } from './ArchitectureConnections';
+import { DiagnosticFlowConnections } from './DiagnosticFlowConnections';
 import type { DiagnosticResult, DiagnosticScenario, EngineLog } from '../engine/types';
 
 type ArchitectureHeroProps = {
@@ -482,11 +483,14 @@ function FlowDataPanel() {
   return (
     <Panel className="flow-panel" title="FLUXO DE DIAGNÓSTICO" icon={Workflow}>
       <div className="flow-pipeline">
+        <DiagnosticFlowConnections />
         {steps.map((step) => {
           const Icon = step.icon;
 
           return (
             <div className="flow-step" key={step.label}>
+              <span className="flow-port flow-port-top" aria-hidden="true" />
+              <span className="flow-port flow-port-bottom" aria-hidden="true" />
               <div>
                 <Icon className="h-5 w-5" aria-hidden="true" />
               </div>
@@ -516,6 +520,30 @@ function NitroCorePanel({ result }: { result: DiagnosticResult }) {
         <div className="core-halo" aria-hidden="true" />
         <div className="core-grid-lines" aria-hidden="true" />
         <img className="chip-reference-image" src={nitroCoreImage} alt="" aria-hidden="true" />
+        <svg className="core-circuit-overlay" viewBox="0 0 620 520" preserveAspectRatio="none" aria-hidden="true">
+          <defs>
+            <linearGradient id="coreTraceCyan" x1="0" x2="1" y1="0" y2="0">
+              <stop offset="0" stopColor="#22d3ee" stopOpacity="0" />
+              <stop offset="0.34" stopColor="#22d3ee" stopOpacity="0.86" />
+              <stop offset="1" stopColor="#a855f7" stopOpacity="0.2" />
+            </linearGradient>
+            <linearGradient id="coreTraceViolet" x1="1" x2="0" y1="0" y2="0">
+              <stop offset="0" stopColor="#a855f7" stopOpacity="0" />
+              <stop offset="0.42" stopColor="#a855f7" stopOpacity="0.64" />
+              <stop offset="1" stopColor="#22d3ee" stopOpacity="0.22" />
+            </linearGradient>
+          </defs>
+          <path className="core-trace core-trace-left" d="M34 206 H128 V238 H234" />
+          <path className="core-trace core-trace-right" d="M586 206 H492 V238 H386" />
+          <path className="core-trace core-trace-left core-trace-low" d="M58 330 H168 V300 H244" />
+          <path className="core-trace core-trace-right core-trace-low" d="M562 330 H452 V300 H376" />
+          <path className="core-wave core-wave-left" d="M28 270 C78 242 116 298 166 270 S244 242 292 270" />
+          <path className="core-wave core-wave-right" d="M592 270 C542 242 504 298 454 270 S376 242 328 270" />
+          <circle className="core-trace-node" cx="234" cy="238" r="4" />
+          <circle className="core-trace-node" cx="386" cy="238" r="4" />
+          <circle className="core-trace-node" cx="244" cy="300" r="3.5" />
+          <circle className="core-trace-node" cx="376" cy="300" r="3.5" />
+        </svg>
         <div className="core-static-rails" aria-hidden="true">
           <span className="rail rail-left" />
           <span className="rail rail-right" />

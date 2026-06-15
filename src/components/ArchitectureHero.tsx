@@ -22,6 +22,7 @@ import {
   Workflow,
   type LucideIcon,
 } from 'lucide-react';
+import { ArchitectureConnections } from './ArchitectureConnections';
 import type { DiagnosticResult, DiagnosticScenario, EngineLog } from '../engine/types';
 
 type ArchitectureHeroProps = {
@@ -421,26 +422,7 @@ function ArchitecturePanel({ result, scenario }: { result: DiagnosticResult; sce
   return (
     <Panel className="architecture-panel" title="" icon={CircuitBoard} hideTitlebar>
       <div className="architecture-map">
-        <svg className="architecture-wires" viewBox="0 0 720 310" preserveAspectRatio="none" aria-hidden="true">
-          <defs>
-            <linearGradient id="archFlow" x1="0" x2="1" y1="0" y2="0">
-              <stop offset="0" stopColor="#22d3ee" stopOpacity="0.32" />
-              <stop offset="0.72" stopColor="#22d3ee" stopOpacity="0.92" />
-              <stop offset="1" stopColor="#a855f7" stopOpacity="0.82" />
-            </linearGradient>
-            <marker id="archArrow" markerHeight="8" markerWidth="8" orient="auto" refX="7" refY="4">
-              <path d="M0,0 L8,4 L0,8 Z" />
-            </marker>
-          </defs>
-          <path d="M199 86 H266" />
-          <path d="M454 86 H518" />
-          <path d="M112 128 V180" />
-          <path d="M360 128 V170 H279 V222" />
-          <path d="M360 128 V170 H438 V222" />
-          <path d="M606 128 V180" />
-          <path d="M350 256 H366" />
-          <path d="M511 256 H540 V218 H513" />
-        </svg>
+        <ArchitectureConnections />
 
         <article className="arch-box arch-input">
           <Gauge className="h-6 w-6" aria-hidden="true" />
@@ -541,6 +523,16 @@ function NitroCorePanel({ result }: { result: DiagnosticResult }) {
           <span className="rail rail-down" />
           <span className="rail rail-left-low" />
           <span className="rail rail-right-low" />
+        </div>
+        <div className="core-energy-links" aria-hidden="true">
+          <span className="core-link core-link-up" />
+          <span className="core-link core-link-left" />
+          <span className="core-link core-link-right" />
+        </div>
+        <div className="core-identity">
+          <BrainCircuit className="h-7 w-7" aria-hidden="true" />
+          <strong>NITRO CORE</strong>
+          <small>Núcleo de comportamento</small>
         </div>
         <div className="core-microstats">
           <span>{confidence}% confiança</span>

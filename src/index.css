@@ -562,36 +562,36 @@ button {
   margin-top: 0;
 }
 
-.architecture-wires {
+.architecture-connections {
   position: absolute;
   inset: 0;
-  z-index: 1;
+  z-index: 2;
   width: 100%;
   height: 100%;
   pointer-events: none;
 }
 
-.architecture-wires > path {
+.architecture-connections > path {
   fill: none;
-  stroke: url("#archFlow");
-  stroke-width: 2.35;
+  stroke: #22d3ee;
+  stroke-width: 2.25;
   stroke-linecap: round;
   stroke-linejoin: round;
-  marker-end: url("#archArrow");
-  filter: drop-shadow(0 0 5px rgba(34, 211, 238, 0.55));
-  opacity: 0.9;
+  marker-end: url("#architectureArrow");
+  filter: url("#architectureGlow");
+  opacity: 0.86;
 }
 
-.architecture-wires marker path {
+.architecture-connections marker path {
   fill: #22d3ee;
   stroke: none;
-  opacity: 0.94;
+  opacity: 0.92;
   filter: drop-shadow(0 0 5px rgba(34, 211, 238, 0.68));
 }
 
 .arch-box {
   position: absolute;
-  z-index: 2;
+  z-index: 3;
   display: grid;
   min-width: 0;
   align-content: center;
@@ -805,6 +805,50 @@ button {
   pointer-events: none;
 }
 
+.core-energy-links {
+  position: absolute;
+  inset: -42% -36%;
+  z-index: 4;
+  pointer-events: none;
+}
+
+.core-link {
+  position: absolute;
+  display: block;
+  background: linear-gradient(90deg, transparent, rgba(34, 211, 238, 0.9), rgba(168, 85, 247, 0.56), transparent);
+  box-shadow:
+    0 0 12px rgba(34, 211, 238, 0.42),
+    0 0 22px rgba(168, 85, 247, 0.16);
+  opacity: 0.78;
+}
+
+.core-link-up {
+  top: 0;
+  left: 50%;
+  width: 2px;
+  height: 46%;
+  transform: translateX(-50%);
+  background: linear-gradient(180deg, transparent, rgba(34, 211, 238, 0.9), rgba(168, 85, 247, 0.55), transparent);
+}
+
+.core-link-left {
+  top: 48%;
+  right: 50%;
+  width: 48%;
+  height: 2px;
+  transform: rotate(-10deg);
+  transform-origin: right center;
+}
+
+.core-link-right {
+  top: 49%;
+  left: 50%;
+  width: 50%;
+  height: 2px;
+  transform: rotate(9deg);
+  transform-origin: left center;
+}
+
 .rail {
   position: absolute;
   display: block;
@@ -870,29 +914,37 @@ button {
 
 .core-identity {
   position: absolute;
-  right: 9%;
-  bottom: 7%;
-  left: 9%;
-  z-index: 5;
+  top: 50%;
+  left: 50%;
+  z-index: 6;
   display: grid;
   justify-items: center;
-  gap: 0.08rem;
-  border: 1px solid rgba(34, 211, 238, 0.28);
-  border-radius: 10px;
-  padding: 0.42rem 0.58rem;
+  gap: 0.14rem;
+  min-width: min(62%, 13.5rem);
+  border: 1px solid rgba(34, 211, 238, 0.44);
+  border-radius: 12px;
+  padding: 0.62rem 0.78rem 0.68rem;
+  transform: translate(-50%, -44%);
   color: #ecfeff;
   background:
-    linear-gradient(90deg, rgba(2, 6, 23, 0.1), rgba(2, 6, 23, 0.72), rgba(2, 6, 23, 0.1)),
-    rgba(2, 6, 23, 0.42);
+    radial-gradient(circle at 50% 0%, rgba(34, 211, 238, 0.26), transparent 62%),
+    linear-gradient(145deg, rgba(4, 11, 24, 0.82), rgba(8, 11, 35, 0.72)),
+    rgba(2, 6, 23, 0.7);
   box-shadow:
-    0 0 22px rgba(34, 211, 238, 0.18),
-    inset 0 0 18px rgba(34, 211, 238, 0.07);
+    0 0 28px rgba(34, 211, 238, 0.26),
+    0 0 42px rgba(168, 85, 247, 0.18),
+    inset 0 0 24px rgba(34, 211, 238, 0.12);
   backdrop-filter: blur(8px);
+}
+
+.core-identity svg {
+  color: #67e8f9;
+  filter: drop-shadow(0 0 9px rgba(34, 211, 238, 0.72));
 }
 
 .core-identity strong {
   color: #ffffff;
-  font-size: clamp(0.98rem, 1.35vw, 1.42rem);
+  font-size: clamp(1.1rem, 1.55vw, 1.6rem);
   font-weight: 950;
   line-height: 1;
   text-align: center;
@@ -1787,7 +1839,7 @@ button {
     padding: 0.95rem 1rem;
   }
 
-  .architecture-wires {
+  .architecture-connections {
     display: none;
   }
 

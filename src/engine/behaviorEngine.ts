@@ -1,192 +1,205 @@
-import { rules } from './rules';
+import { behaviorSignatures } from '../data/behaviorSignatures';
+import { diagnosticCases } from '../data/diagnosticCases';
+import type { DiagnosticResult as BehaviorDiagnosticResult, DiagnosticSession, Evidence, Hypothesis } from '../types/diagnostics';
+import type { MeasurementInput, NormalizedMeasurement } from '../types/measurements';
+import { buildConclusionTexts, buildHypothesisEvidence, toLegacyEvidence, uniqueEvidences } from './evidenceBuilder';
+import { normalizeMeasurements } from './measurementNormalizer';
+import { buildNextTests, toLegacyNextTests } from './nextTests';
+import { evaluateRules } from './ruleEvaluator';
+import { scoreHypotheses } from './scoring';
 import type {
   DiagnosticResult,
   DiagnosticScenario,
   EngineLog,
   Measurement,
   MonitorMetric,
-  RuleMatch,
   Suspect,
 } from './types';
 
-type SuspectAccumulator = {
-  id: string;
-  name: string;
-  category: Suspect['category'];
-  score: number;
-  reasons: string[];
+const legacyNameByHypothesisId: Record<string, string> = {
+  firmware_spi: 'Firmware SPI',
+  control_logic: 'Boot/Control Logic',
+  cpu_boot_failure: 'CPU Boot Failure',
+  clock_reset: 'Clock/Reset',
+  shorted_rail: 'Shorted Rail',
+  buck_converter: 'Buck Converter',
+  ldo_regulator: 'LDO Regulator',
 };
 
-const metricAccentBySeverity: Record<'healthy' | 'warn' | 'fail', MonitorMetric['accent']> = {
-  healthy: 'green',
-  warn: 'amber',
-  fail: 'violet',
+const legacyCategoryByHypothesisId: Record<string, Suspect['category']> = {
+  firmware_spi: 'firmware',
+  control_logic: 'logic',
+  cpu_boot_failure: 'logic',
+  clock_reset: 'timing',
+  shorted_rail: 'short',
+  buck_converter: 'regulator',
+  ldo_regulator: 'regulator',
 };
 
-function formatMeasurementValue(measurement: Measurement): string {
-  if (typeof measurement.value === 'number' && measurement.unit) {
-    return `${measurement.value}${measurement.unit}`;
+function legacyKindToType(kind: Measurement['kind']): MeasurementInput['type'] {
+  if (kind === 'logic') {
+    return 'signal';
   }
 
-  return measurement.status.replace('-', ' ');
-}
-
-function measurementToLog(measurement: Measurement): EngineLog | null {
-  if (measurement.status === 'present') {
-    return { level: 'SCAN', message: `${measurement.label} detected` };
+  if (kind === 'status') {
+    return 'state';
   }
 
-  if (measurement.status === 'forced-active') {
-    return { level: 'TEST', message: `${measurement.label} active under forced command` };
+  if (kind === 'voltage' || kind === 'current' || kind === 'resistance' || kind === 'temperature') {
+    return kind;
   }
 
-  if (measurement.status === 'absent' || measurement.status === 'dead') {
-    return { level: 'WARN', message: `${measurement.label} absent` };
+  return 'state';
+}
+
+function legacyMeasurementToInput(measurement: Measurement): MeasurementInput {
+  return {
+    id: measurement.id,
+    label: measurement.label,
+    type: legacyKindToType(measurement.kind),
+    value: measurement.value ?? measurement.status,
+    unit: measurement.unit,
+    node: measurement.lineId ?? measurement.id,
+    component: measurement.lineId,
+    context: [measurement.status, measurement.note].filter(Boolean).join(' '),
+    timestamp: '00:00:00',
+    expected: measurement.kind === 'voltage' && typeof measurement.value === 'number' ? { nominal: measurement.value } : undefined,
+  };
+}
+
+function sessionFromScenario(scenario: DiagnosticScenario): DiagnosticSession {
+  const predefinedCase = diagnosticCases.find((diagnosticCase) => diagnosticCase.id === scenario.id);
+
+  if (predefinedCase) {
+    return predefinedCase;
   }
 
-  if (measurement.status === 'low' || measurement.status === 'high') {
-    return { level: 'SCAN', message: `${measurement.label} ${measurement.status}: ${formatMeasurementValue(measurement)}` };
-  }
-
-  return null;
+  return {
+    id: scenario.id,
+    title: scenario.name,
+    deviceCategory: scenario.boardName,
+    symptoms: [scenario.description],
+    measurements: scenario.measurements.map(legacyMeasurementToInput),
+    selectedCase: scenario.id,
+    createdAt: new Date(0).toISOString(),
+  };
 }
 
-function pushUnique(target: string[], values: string[] | undefined): void {
-  values?.forEach((value) => {
-    if (!target.includes(value)) {
-      target.push(value);
-    }
-  });
+function metricValue(measurement: NormalizedMeasurement | undefined, fallback: string): string {
+  return measurement?.normalizedValue ?? fallback;
 }
 
-function applyRuleMatch(
-  match: RuleMatch,
-  suspects: Map<string, SuspectAccumulator>,
-  resultParts: Pick<DiagnosticResult, 'evidence' | 'conclusions' | 'nextTests' | 'logs'>,
-): void {
-  match.evidence?.forEach((evidence) => resultParts.evidence.push(evidence));
-  match.logs?.forEach((log) => resultParts.logs.push(log));
-  pushUnique(resultParts.conclusions, match.conclusions);
-  pushUnique(resultParts.nextTests, match.nextTests);
-
-  match.suspectScores?.forEach((score) => {
-    const current = suspects.get(score.id);
-
-    if (current) {
-      current.score += score.score;
-      current.reasons.push(score.reason);
-      return;
-    }
-
-    suspects.set(score.id, {
-      id: score.id,
-      name: score.name,
-      category: score.category,
-      score: score.score,
-      reasons: [score.reason],
-    });
-  });
-}
-
-function calculateHealthPercentage(suspects: Suspect[], scenario: DiagnosticScenario): number {
-  const highestProbability = suspects[0]?.probability ?? 12;
-  const hasShort = suspects.some((suspect) => suspect.category === 'short');
-  const hasFunctionalSource = scenario.id === 'lg-cj87-boot-failure';
-  const penalty = hasShort ? 28 : hasFunctionalSource ? 10 : 18;
-
-  return Math.max(12, Math.min(94, 100 - Math.round(highestProbability * 0.58) - penalty));
-}
-
-function buildMonitorMetrics(scenario: DiagnosticScenario, healthPercentage: number): MonitorMetric[] {
-  const firstVoltage = scenario.measurements.find((measurement) => measurement.kind === 'voltage' && measurement.status === 'present');
-  const current = scenario.measurements.find((measurement) => measurement.kind === 'current');
-  const resistance = scenario.measurements.find((measurement) => measurement.kind === 'resistance');
-  const shortDetected = resistance?.value !== undefined && resistance.value < 2;
-  const voltageValue = firstVoltage ? formatMeasurementValue(firstVoltage) : '0V';
-  const currentValue = current ? formatMeasurementValue(current) : 'n/a';
-  const resistanceValue = resistance ? formatMeasurementValue(resistance) : 'n/a';
+function buildMonitorMetrics(measurements: NormalizedMeasurement[], healthScore: number): MonitorMetric[] {
+  const firstVoltage = measurements.find((measurement) => measurement.type === 'voltage' && measurement.isPresent);
+  const current = measurements.find((measurement) => measurement.type === 'current');
+  const resistance = measurements.find((measurement) => measurement.type === 'resistance');
+  const shortDetected = measurements.some((measurement) => measurement.states.includes('low_resistance'));
 
   return [
     {
       label: 'Board Health',
-      value: `${healthPercentage}%`,
-      accent: healthPercentage > 72 ? 'green' : healthPercentage > 45 ? 'amber' : 'violet',
+      value: `${healthScore}%`,
+      accent: healthScore > 72 ? 'green' : healthScore > 45 ? 'amber' : 'violet',
     },
-    { label: 'Detected Voltage', value: voltageValue, accent: 'cyan' },
-    { label: 'Current Draw', value: currentValue, accent: current?.status === 'high' ? 'amber' : 'blue' },
-    { label: 'Estimated Resistance', value: resistanceValue, accent: shortDetected ? 'amber' : 'violet' },
+    { label: 'Detected Voltage', value: metricValue(firstVoltage, '0 V'), accent: 'cyan' },
+    { label: 'Current Draw', value: metricValue(current, 'n/d'), accent: current?.states.includes('current_high') ? 'amber' : 'blue' },
+    { label: 'Estimated Resistance', value: metricValue(resistance, 'n/d'), accent: shortDetected ? 'amber' : 'violet' },
     {
       label: 'Short Status',
       value: shortDetected ? 'Probable short' : 'No hard short',
-      accent: shortDetected ? metricAccentBySeverity.fail : metricAccentBySeverity.healthy,
+      accent: shortDetected ? 'violet' : 'green',
     },
   ];
 }
 
-function buildSummary(scenario: DiagnosticScenario, suspects: Suspect[], conclusions: string[]): string {
-  if (scenario.id === 'lg-cj87-boot-failure') {
-    return 'Source rails can be generated, but the main board does not complete the boot sequence. Firmware SPI, clock/reset and CPU boot path are the leading suspects.';
+function calculateHealthScore(session: DiagnosticSession, hypotheses: Hypothesis[]): number {
+  const faultHypotheses = hypotheses.filter((hypothesis) => hypothesis.id !== 'source_functional');
+  const highestConfidence = faultHypotheses[0]?.confidence ?? 12;
+  const hasShort = faultHypotheses.some((hypothesis) => hypothesis.category === 'short');
+  const sourceValidated = hypotheses.some((hypothesis) => hypothesis.id === 'source_functional');
+  const penalty = hasShort ? 28 : sourceValidated || session.id === 'lg-cj87-boot-failure' ? 10 : 18;
+
+  return Math.max(12, Math.min(94, 100 - Math.round(highestConfidence * 0.58) - penalty));
+}
+
+function buildSummary(session: DiagnosticSession, hypotheses: Hypothesis[], evidences: Evidence[]): string {
+  if (session.id === 'lg-cj87-boot-failure') {
+    return 'Fonte responde ao comando forçado, mas a placa principal não completa a sequência de boot/controle. Firmware SPI, Clock/Reset e inicialização da CPU seguem como hipóteses principais.';
   }
 
-  if (suspects.length === 0) {
-    return 'No decisive failure pattern matched. Continue guided probing with the captured measurements.';
+  const strongest = hypotheses.find((hypothesis) => hypothesis.id !== 'source_functional');
+
+  if (!strongest) {
+    return evidences[0]?.text ?? 'Nenhum padrão decisivo foi confirmado; continuar medições guiadas.';
   }
 
-  return `${suspects[0].name} is the strongest match. ${conclusions[0] ?? 'The captured measurements match a known diagnostic pattern.'}`;
+  return `${strongest.title} é a hipótese mais forte. ${evidences[0]?.text ?? 'As medições indicam comportamento elétrico anômalo.'}`;
+}
+
+function hypothesisLogs(hypotheses: Hypothesis[]): EngineLog[] {
+  return hypotheses
+    .filter((hypothesis) => hypothesis.id !== 'source_functional')
+    .slice(0, 4)
+    .map((hypothesis) => ({
+      level: 'AI',
+      message: `${hypothesis.title}: ${hypothesis.confidence}%`,
+    }));
+}
+
+function toLegacySuspects(hypotheses: Hypothesis[]): Suspect[] {
+  return hypotheses
+    .filter((hypothesis) => hypothesis.id !== 'source_functional')
+    .map((hypothesis) => ({
+      id: hypothesis.id,
+      name: legacyNameByHypothesisId[hypothesis.id] ?? hypothesis.title,
+      probability: hypothesis.confidence,
+      category: legacyCategoryByHypothesisId[hypothesis.id] ?? 'logic',
+      reasons: [hypothesis.description, ...hypothesis.suspects],
+    }));
+}
+
+export function runBehaviorEngine(session: DiagnosticSession): BehaviorDiagnosticResult {
+  const measurements = normalizeMeasurements(session.measurements);
+  const evaluation = evaluateRules(session, measurements, behaviorSignatures);
+  const hypotheses = scoreHypotheses(evaluation.hypothesisSeeds);
+  const nextTests = buildNextTests(evaluation.nextTests, hypotheses);
+  const technicalEvidences = uniqueEvidences(evaluation.evidences);
+  const evidences = uniqueEvidences([...technicalEvidences, ...buildHypothesisEvidence(hypotheses)]);
+  const healthScore = calculateHealthScore(session, hypotheses);
+
+  return {
+    sessionId: session.id,
+    healthScore,
+    hypotheses,
+    evidences,
+    nextTests,
+    logs: [...evaluation.logs, ...hypothesisLogs(hypotheses)],
+    summary: buildSummary(session, hypotheses, technicalEvidences),
+  };
 }
 
 export function runDiagnosticScenario(scenario: DiagnosticScenario): DiagnosticResult {
-  const resultParts: Pick<DiagnosticResult, 'evidence' | 'conclusions' | 'nextTests' | 'logs'> = {
-    evidence: [],
-    conclusions: [],
-    nextTests: [],
-    logs: scenario.measurements.map(measurementToLog).filter((log): log is EngineLog => Boolean(log)),
-  };
-  const suspectAccumulator = new Map<string, SuspectAccumulator>();
-
-  rules.forEach((rule) => {
-    const match = rule.evaluate(scenario);
-
-    if (match) {
-      applyRuleMatch(match, suspectAccumulator, resultParts);
-    }
-  });
-
-  const suspects = Array.from(suspectAccumulator.values())
-    .map<Suspect>((suspect) => ({
-      id: suspect.id,
-      name: suspect.name,
-      category: suspect.category,
-      probability: Math.min(96, Math.max(12, Math.round(suspect.score))),
-      reasons: Array.from(new Set(suspect.reasons)),
-    }))
-    .sort((left, right) => right.probability - left.probability);
-
-  suspects.slice(0, 4).forEach((suspect) => {
-    resultParts.logs.push({ level: 'AI', message: `${suspect.name} suspected: ${suspect.probability}%` });
-  });
-
-  if (resultParts.conclusions.length === 0) {
-    resultParts.conclusions.push('Insufficient evidence for a high-confidence classification.');
-  }
-
-  if (resultParts.nextTests.length === 0) {
-    resultParts.nextTests.push('Capture additional voltage, resistance and control-signal measurements.');
-  }
-
-  const healthPercentage = calculateHealthPercentage(suspects, scenario);
+  const session = sessionFromScenario(scenario);
+  const measurements = normalizeMeasurements(session.measurements);
+  const behaviorResult = runBehaviorEngine(session);
+  const technicalEvidences = behaviorResult.evidences.filter((evidence) => !evidence.id.endsWith('-confidence'));
+  const conclusions = buildConclusionTexts(technicalEvidences);
+  const suspects = toLegacySuspects(behaviorResult.hypotheses);
 
   return {
     scenarioId: scenario.id,
     scenarioName: scenario.name,
     boardName: scenario.boardName,
-    healthPercentage,
-    summary: buildSummary(scenario, suspects, resultParts.conclusions),
-    conclusions: resultParts.conclusions,
-    evidence: resultParts.evidence,
+    healthPercentage: behaviorResult.healthScore,
+    summary: behaviorResult.summary,
+    conclusions,
+    evidence: toLegacyEvidence(technicalEvidences),
     suspects,
-    nextTests: resultParts.nextTests,
-    logs: resultParts.logs,
-    monitorMetrics: buildMonitorMetrics(scenario, healthPercentage),
+    nextTests: toLegacyNextTests(behaviorResult.nextTests),
+    logs: behaviorResult.logs.map((log) => ({
+      level: log.level,
+      message: log.message,
+    })),
+    monitorMetrics: buildMonitorMetrics(measurements, behaviorResult.healthScore),
   };
 }

@@ -37,6 +37,7 @@ type PanelProps = {
   icon: LucideIcon;
   className: string;
   children: ReactNode;
+  hideTitlebar?: boolean;
 };
 
 type FlowStep = {
@@ -319,16 +320,18 @@ function logTagClass(level: EngineLog['level']): string {
   return classes[level] ?? 'log-tag-scan';
 }
 
-function Panel({ title, icon: Icon, className, children }: PanelProps) {
+function Panel({ title, icon: Icon, className, children, hideTitlebar = false }: PanelProps) {
   return (
     <section className={`visual-panel ${className}`}>
-      <div className="panel-titlebar">
-        <span>{title}</span>
-        <Icon className="h-4 w-4" aria-hidden="true" />
-        <i />
-        <i />
-        <i />
-      </div>
+      {!hideTitlebar && (
+        <div className="panel-titlebar">
+          <span>{title}</span>
+          <Icon className="h-4 w-4" aria-hidden="true" />
+          <i />
+          <i />
+          <i />
+        </div>
+      )}
       {children}
     </section>
   );
@@ -416,16 +419,28 @@ function ArchitecturePanel({ result, scenario }: { result: DiagnosticResult; sce
   const strongest = result.suspects[0]?.name ?? 'Classificador universal';
 
   return (
-    <Panel className="architecture-panel" title="ARQUITETURA OPERACIONAL DO NITRO" icon={CircuitBoard}>
+    <Panel className="architecture-panel" title="" icon={CircuitBoard} hideTitlebar>
       <div className="architecture-map">
         <svg className="architecture-wires" viewBox="0 0 720 310" preserveAspectRatio="none" aria-hidden="true">
-          <path d="M94 78 H278" />
-          <path d="M360 78 H536" />
-          <path d="M566 120 V208 H466" />
-          <path d="M156 120 V208 H276" />
-          <path d="M360 126 V186" />
-          <path d="M360 238 V294" />
-          <path d="M156 256 H566" />
+          <defs>
+            <linearGradient id="archFlow" x1="0" x2="1" y1="0" y2="0">
+              <stop offset="0" stopColor="#22d3ee" stopOpacity="0.32" />
+              <stop offset="0.72" stopColor="#22d3ee" stopOpacity="0.92" />
+              <stop offset="1" stopColor="#a855f7" stopOpacity="0.82" />
+            </linearGradient>
+            <marker id="archArrow" markerHeight="5" markerWidth="6" orient="auto" refX="5.4" refY="2.5">
+              <path d="M0,0 L6,2.5 L0,5 Z" />
+            </marker>
+          </defs>
+          <path d="M198 92 H265" />
+          <path d="M455 92 H518" />
+          <path d="M112 136 V187" />
+          <path d="M606 136 V180" />
+          <path d="M360 136 V175 H279 V218" />
+          <path d="M360 136 V176 H438 V218" />
+          <path d="M206 224 H208" />
+          <path d="M350 250 H365" />
+          <path d="M511 238 H540 V258" />
         </svg>
 
         <article className="arch-box arch-input">

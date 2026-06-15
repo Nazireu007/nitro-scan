@@ -400,7 +400,14 @@ function SystemMonitorPanel({ result }: { result: DiagnosticResult }) {
 
       <div className="monitor-line-chart" aria-hidden="true">
         <svg viewBox="0 0 260 86" preserveAspectRatio="none">
-          <polyline points="0,66 18,58 34,64 52,38 70,48 88,28 106,52 124,42 142,55 160,34 178,48 196,36 214,54 232,42 260,26" />
+          <polyline
+            className="chart-line chart-line-base"
+            points="0,66 18,58 34,64 52,38 70,48 88,28 106,52 124,42 142,55 160,34 178,48 196,36 214,54 232,42 260,26"
+          />
+          <polyline
+            className="chart-line chart-line-pulse"
+            points="0,66 18,58 34,64 52,38 70,48 88,28 106,52 124,42 142,55 160,34 178,48 196,36 214,54 232,42 260,26"
+          />
         </svg>
       </div>
 
@@ -483,24 +490,26 @@ function FlowDataPanel() {
   return (
     <Panel className="flow-panel" title="FLUXO DE DIAGNÓSTICO" icon={Workflow}>
       <div className="flow-pipeline">
-        <DiagnosticFlowConnections />
-        {steps.map((step) => {
-          const Icon = step.icon;
+        <div className="flow-pipeline-inner">
+          <DiagnosticFlowConnections />
+          {steps.map((step) => {
+            const Icon = step.icon;
 
-          return (
-            <div className="flow-step" key={step.label}>
-              <span className="flow-port flow-port-top" aria-hidden="true" />
-              <span className="flow-port flow-port-bottom" aria-hidden="true" />
-              <div>
-                <Icon className="h-5 w-5" aria-hidden="true" />
+            return (
+              <div className="flow-step" key={step.label}>
+                <span className="flow-port flow-port-top" aria-hidden="true" />
+                <span className="flow-port flow-port-bottom" aria-hidden="true" />
+                <div>
+                  <Icon className="h-5 w-5" aria-hidden="true" />
+                </div>
+                <p>
+                  <strong>{step.label}</strong>
+                  <span>{step.detail}</span>
+                </p>
               </div>
-              <p>
-                <strong>{step.label}</strong>
-                <span>{step.detail}</span>
-              </p>
-            </div>
-          );
-        })}
+            );
+          })}
+        </div>
       </div>
     </Panel>
   );
@@ -665,7 +674,14 @@ function AnalyticsPanel({ result, scenarios }: { result: DiagnosticResult; scena
       </div>
       <div className="analytics-line" aria-hidden="true">
         <svg viewBox="0 0 360 116" preserveAspectRatio="none">
-          <polyline points="0,86 36,70 72,82 108,50 144,62 180,44 216,54 252,32 288,42 324,26 360,18" />
+          <polyline
+            className="chart-line chart-line-base"
+            points="0,86 36,70 72,82 108,50 144,62 180,44 216,54 252,32 288,42 324,26 360,18"
+          />
+          <polyline
+            className="chart-line chart-line-pulse chart-line-pulse-soft"
+            points="0,86 36,70 72,82 108,50 144,62 180,44 216,54 252,32 288,42 324,26 360,18"
+          />
         </svg>
       </div>
       <div className="analytics-bottom">

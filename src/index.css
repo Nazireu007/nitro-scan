@@ -482,13 +482,30 @@ button {
   height: 100%;
 }
 
-.monitor-line-chart polyline {
+.chart-line {
   fill: none;
-  stroke: #a855f7;
   stroke-width: 4;
   stroke-linecap: round;
   stroke-linejoin: round;
+  vector-effect: non-scaling-stroke;
+}
+
+.monitor-line-chart .chart-line-base {
+  stroke: #a855f7;
   filter: drop-shadow(0 0 6px rgba(168, 85, 247, 0.64));
+  animation: chartBreath 4.6s ease-in-out infinite;
+}
+
+.monitor-line-chart .chart-line-pulse {
+  stroke: #67e8f9;
+  stroke-width: 3.2;
+  stroke-dasharray: 28 94;
+  stroke-dashoffset: 0;
+  filter:
+    drop-shadow(0 0 7px rgba(34, 211, 238, 0.76))
+    drop-shadow(0 0 12px rgba(168, 85, 247, 0.22));
+  opacity: 0.9;
+  animation: telemetryPulse 3.2s linear infinite;
 }
 
 .monitor-readouts {
@@ -586,6 +603,26 @@ button {
   vector-effect: non-scaling-stroke;
 }
 
+.architecture-route-support {
+  stroke-width: 1.35;
+  opacity: 0.38;
+  filter: drop-shadow(0 0 4px rgba(34, 211, 238, 0.22));
+}
+
+.architecture-signal {
+  fill: none;
+  stroke: rgba(103, 232, 249, 0.9);
+  stroke-width: 1.45;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-dasharray: 22 132;
+  stroke-dashoffset: 0;
+  filter: drop-shadow(0 0 6px rgba(34, 211, 238, 0.55));
+  opacity: 0.55;
+  animation: architectureSignalFlow 5.8s linear infinite;
+  vector-effect: non-scaling-stroke;
+}
+
 .architecture-connections marker path {
   fill: #22d3ee;
   stroke: none;
@@ -660,23 +697,53 @@ button {
   right: 2.2%;
   width: 20%;
   height: 33.4%;
+  overflow: hidden;
   border-color: rgba(34, 211, 238, 0.34);
 }
 
 .flow-pipeline {
   position: relative;
   z-index: 2;
-  display: grid;
   height: calc(100% - 2.82rem);
-  min-height: 22rem;
+  min-height: 0;
+  overflow-x: hidden;
+  overflow-y: scroll;
+  padding: 0.92rem 0.78rem 0.92rem 1rem;
+  scroll-behavior: smooth;
+  scrollbar-color: rgba(34, 211, 238, 0.88) rgba(2, 6, 23, 0.52);
+  scrollbar-gutter: stable;
+  scrollbar-width: thin;
+}
+
+.flow-pipeline::-webkit-scrollbar {
+  width: 6px;
+}
+
+.flow-pipeline::-webkit-scrollbar-track {
+  border-left: 1px solid rgba(34, 211, 238, 0.08);
+  background:
+    linear-gradient(180deg, rgba(34, 211, 238, 0.05), rgba(168, 85, 247, 0.06)),
+    rgba(2, 6, 23, 0.55);
+}
+
+.flow-pipeline::-webkit-scrollbar-thumb {
+  min-height: 3rem;
+  border-radius: 999px;
+  background: linear-gradient(180deg, #22d3ee, #60a5fa, #a855f7);
+  box-shadow: 0 0 10px rgba(34, 211, 238, 0.48);
+}
+
+.flow-pipeline-inner {
+  position: relative;
+  display: grid;
+  min-height: 31.5rem;
   grid-template-rows: repeat(5, minmax(3.45rem, 1fr));
   gap: 3.2%;
-  padding: 0.92rem 1rem 1rem;
 }
 
 .diagnostic-flow-connections {
   position: absolute;
-  inset: 0.92rem 1rem 1rem;
+  inset: 0;
   z-index: 1;
   width: auto;
   height: auto;
@@ -1353,13 +1420,26 @@ button {
   background-size: 22px 22px;
 }
 
-.analytics-line polyline {
-  fill: none;
+.analytics-line .chart-line-base {
   stroke: #22d3ee;
-  stroke-width: 4;
-  stroke-linecap: round;
-  stroke-linejoin: round;
   filter: drop-shadow(0 0 6px rgba(34, 211, 238, 0.58));
+  animation: chartBreath 5.4s ease-in-out infinite;
+}
+
+.analytics-line .chart-line-pulse {
+  stroke: #a855f7;
+  stroke-width: 3;
+  stroke-dasharray: 34 120;
+  stroke-dashoffset: 0;
+  filter:
+    drop-shadow(0 0 7px rgba(168, 85, 247, 0.56))
+    drop-shadow(0 0 11px rgba(34, 211, 238, 0.18));
+  opacity: 0.66;
+  animation: telemetryPulse 4.6s linear infinite;
+}
+
+.analytics-line .chart-line-pulse-soft {
+  animation-duration: 5.2s;
 }
 
 .analytics-bottom {
@@ -1833,6 +1913,35 @@ button {
   45%, 100% {
     stroke-dashoffset: 0;
     opacity: 1;
+  }
+}
+
+@keyframes telemetryPulse {
+  from {
+    stroke-dashoffset: 0;
+  }
+  to {
+    stroke-dashoffset: -244;
+  }
+}
+
+@keyframes chartBreath {
+  0%, 100% {
+    opacity: 0.78;
+    filter: brightness(0.95) drop-shadow(0 0 6px rgba(34, 211, 238, 0.34));
+  }
+  50% {
+    opacity: 1;
+    filter: brightness(1.18) drop-shadow(0 0 10px rgba(168, 85, 247, 0.32));
+  }
+}
+
+@keyframes architectureSignalFlow {
+  from {
+    stroke-dashoffset: 0;
+  }
+  to {
+    stroke-dashoffset: -154;
   }
 }
 

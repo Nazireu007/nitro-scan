@@ -10,11 +10,21 @@ export function ArchitectureConnections() {
     { id: 'history-library', d: 'M710 535 H849 V517' },
   ];
 
+  const supportRoutes = [
+    { id: 'upper-reference-bus', d: 'M152 65 V42 H849 V65' },
+    { id: 'cases-signatures', d: 'M269 454 H291' },
+    { id: 'diagnostic-history-trace', d: 'M812 213 V326 H642 V446' },
+  ];
+
+  const signalRoutes = [...routes, ...supportRoutes];
+
   const ports = [
+    [152, 65],
     [269, 139],
     [383, 139],
     [618, 139],
     [731, 139],
+    [849, 65],
     [152, 213],
     [152, 388],
     [468, 213],
@@ -23,6 +33,10 @@ export function ArchitectureConnections() {
     [609, 446],
     [849, 213],
     [849, 388],
+    [269, 454],
+    [291, 454],
+    [812, 213],
+    [642, 446],
     [492, 511],
     [509, 511],
     [710, 535],
@@ -52,6 +66,20 @@ export function ArchitectureConnections() {
       <g className="architecture-route-layer">
         {routes.map((route) => (
           <path className="architecture-route" d={route.d} key={route.id} markerEnd="url(#architectureArrow)" />
+        ))}
+        {supportRoutes.map((route) => (
+          <path className="architecture-route architecture-route-support" d={route.d} key={route.id} />
+        ))}
+      </g>
+
+      <g className="architecture-signal-layer">
+        {signalRoutes.map((route, index) => (
+          <path
+            className="architecture-signal"
+            d={route.d}
+            key={`signal-${route.id}`}
+            style={{ animationDelay: `${index * -0.46}s` }}
+          />
         ))}
       </g>
 

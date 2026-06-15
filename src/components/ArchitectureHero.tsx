@@ -223,6 +223,9 @@ function translateLogMessage(value: string): string {
     'Clock/reset anomaly detected': 'Anomalia de clock/reset detectada',
     '3.3V rail detected': 'Trilho 3,3V detectado',
     '1.2V core rail detected': 'Trilho core 1,2V detectado',
+    '5.1VA Standby detected': '5,1VA em espera detectado',
+    '5.1VA standby detected': '5,1VA em espera detectado',
+    '14VA Input detected': 'Entrada 14VA detectada',
     'PFC command absent': 'Comando PFC ausente',
     'Firmware SPI suspected': 'Firmware SPI suspeito',
   };
@@ -234,8 +237,14 @@ function translateLogMessage(value: string): string {
 
   return value
     .replace(/Target rail voltage/g, 'Tensão do trilho alvo')
+    .replace(/target rail/g, 'trilho alvo')
     .replace(/Injected current/g, 'Corrente injetada')
     .replace(/Rail resistance/g, 'Resistência do trilho')
+    .replace(/5\.1VA Standby/g, '5,1VA em espera')
+    .replace(/5\.1VA standby/g, '5,1VA em espera')
+    .replace(/Standby/g, 'Espera')
+    .replace(/standby/g, 'espera')
+    .replace(/14VA Input/g, 'Entrada 14VA')
     .replace(/12V rail initial/g, 'Trilho 12V inicial')
     .replace(/12V rail after PFC_PCTL forced/g, 'Trilho 12V após PFC_PCTL forçado')
     .replace(/3\.3V logic rail/g, 'Trilho lógico 3,3V')

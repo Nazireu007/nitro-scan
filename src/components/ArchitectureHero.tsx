@@ -170,7 +170,37 @@ function translateMetricValue(value: string): string {
 }
 
 function logTime(index: number): string {
-  return `10:2${index}:${String(13 + index * 7).padStart(2, '0')}`;
+  const totalSeconds = 20 * 60 + 13 + index * 7;
+  const minutes = Math.floor(totalSeconds / 60);
+  const seconds = totalSeconds % 60;
+
+  return `10:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+}
+
+function logTag(level: EngineLog['level']): string {
+  const tags: Record<EngineLog['level'], string> = {
+    AI: 'IA',
+    FAIL: 'AVISAR',
+    INFO: 'DIGITALIZAR',
+    SCAN: 'DIGITALIZAR',
+    TEST: 'TESTE',
+    WARN: 'AVISAR',
+  };
+
+  return tags[level] ?? level;
+}
+
+function logTagClass(level: EngineLog['level']): string {
+  const classes: Record<EngineLog['level'], string> = {
+    AI: 'log-tag-ai',
+    FAIL: 'log-tag-warn',
+    INFO: 'log-tag-scan',
+    SCAN: 'log-tag-scan',
+    TEST: 'log-tag-test',
+    WARN: 'log-tag-warn',
+  };
+
+  return classes[level] ?? 'log-tag-scan';
 }
 
 function Panel({ title, icon: Icon, className, children }: PanelProps) {
@@ -511,8 +541,8 @@ function LogsPanel({ logs }: { logs: EngineLog[] }) {
       <div className="live-log-lines">
         {logs.map((log, index) => (
           <p key={`${log.level}-${log.message}-${index}`}>
-            <span>{logTime(index)}</span>
-            <strong>{log.level}</strong>
+            <time>{logTime(index)}</time>
+            <strong className={logTagClass(log.level)}>{logTag(log.level)}</strong>
             <code>{log.message}</code>
             <em>{log.level === 'WARN' || log.level === 'FAIL' ? '400' : '200'}</em>
           </p>

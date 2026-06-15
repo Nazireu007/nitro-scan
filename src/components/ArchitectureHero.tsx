@@ -79,7 +79,7 @@ function fillStyle(value: number, delay = 0): CSSProperties {
 }
 
 function statusFromIndex(index: number): string {
-  return ['em analise', 'pendente', 'concluido'][index % 3];
+  return ['em análise', 'pendente', 'concluído'][index % 3];
 }
 
 function statusClass(index: number): string {
@@ -112,10 +112,16 @@ function translateDiagnosticText(value: string): string {
       'Evidência insuficiente para uma classificação de alta confiança.',
     'The captured measurements match a known diagnostic pattern.':
       'As medições capturadas correspondem a um padrão de diagnóstico conhecido.',
+    'At least one secondary rail is inactive while a required enable/control command is absent.':
+      'Ao menos um trilho secundário está inativo enquanto um comando obrigatório de enable/controle está ausente.',
     'Shorted Rail': 'Trilho em curto',
     'Firmware SPI': 'Firmware SPI',
     'Boot/Control Logic': 'Lógica de boot/controle',
     'CPU Boot Failure': 'Falha de inicialização da CPU',
+    'LG CJ87 Boot Failure': 'Falha de boot LG CJ87',
+    'Logic rails present with cold CPU': 'Trilhos lógicos presentes com CPU fria',
+    'Buck converter no output': 'Conversor Buck sem saída',
+    'Linear regulator no output': 'Regulador linear sem saída',
   };
   const translated = exactTranslations[value];
 
@@ -129,10 +135,15 @@ function translateDiagnosticText(value: string): string {
     .replace(/Boot\/Control Logic/g, 'Lógica de boot/controle')
     .replace(/CPU Boot Failure/g, 'Falha de inicialização da CPU')
     .replace(/Power supply/g, 'Fonte de alimentação')
+    .replace(/Core rails/g, 'Trilhos principais')
+    .replace(/Secondary rails/g, 'Trilhos secundários')
+    .replace(/secondary rail/g, 'trilho secundário')
+    .replace(/source rail/g, 'trilho de origem')
     .replace(/main board/g, 'placa principal')
     .replace(/Main board/g, 'A placa principal')
     .replace(/boot\/control sequence/g, 'sequência de boot/controle')
     .replace(/not initializing/g, 'não está inicializando')
+    .replace(/not issuing/g, 'não está emitindo')
     .replace(/is the strongest match/g, 'é a hipótese mais forte')
     .replace(/is the primary suspect/g, 'é o principal suspeito')
     .replace(/suspected/g, 'suspeito')
@@ -141,12 +152,108 @@ function translateDiagnosticText(value: string): string {
     .replace(/present/g, 'presente')
     .replace(/valid/g, 'válido')
     .replace(/missing/g, 'ausente')
+    .replace(/inactive/g, 'inativo')
+    .replace(/required/g, 'obrigatório')
+    .replace(/enable\/control command/g, 'comando de enable/controle')
     .replace(/current/g, 'corrente')
     .replace(/voltage/g, 'tensão')
     .replace(/resistance/g, 'resistência')
     .replace(/rail/g, 'trilho')
     .replace(/CPU remains cold/g, 'CPU permanece fria')
     .replace(/low-resistance or current-collapse criteria/g, 'critérios de baixa resistência ou colapso por corrente');
+}
+
+function translateActionText(value: string): string {
+  const exactTranslations: Record<string, string> = {
+    'Trace why the main board is not releasing PFC_PCTL during normal boot.':
+      'Rastrear por que a placa principal não libera PFC_PCTL durante a inicialização normal.',
+    'Probe crystal/clock activity at the CPU.':
+      'Medir a atividade do cristal/clock na CPU.',
+    'Check reset line release during power-on.':
+      'Verificar a liberação da linha de reset ao energizar.',
+    'Read or reflash the SPI firmware image.':
+      'Ler ou regravar a imagem de firmware SPI.',
+    'Capture SPI CLK/CS/MOSI/MISO activity during startup.':
+      'Capturar atividade SPI CLK/CS/MOSI/MISO durante a partida.',
+    'Measure oscillator output and reset release with an oscilloscope.':
+      'Medir a saída do oscilador e a liberação do reset com osciloscópio.',
+    'Follow enable source back to the controller pin.':
+      'Rastrear a origem do enable até o pino do controlador.',
+    'Compare power-sequence timing against the service schematic.':
+      'Comparar o tempo da sequência de alimentação com o esquema de serviço.',
+    'Capture additional voltage, resistance and control-signal measurements.':
+      'Capturar medições adicionais de tensão, resistência e sinais de controle.',
+    'Inject limited current and inspect thermal response.':
+      'Injetar corrente limitada e inspecionar a resposta térmica.',
+    'Isolate downstream capacitors and loads from the collapsed rail.':
+      'Isolar capacitores e cargas posteriores do trilho em queda.',
+    'Measure the resistance again after removing suspicious loads.':
+      'Medir a resistência novamente após remover cargas suspeitas.',
+  };
+  const translated = exactTranslations[value];
+
+  if (translated) {
+    return translated;
+  }
+
+  return value
+    .replace(/^Check (.+) feedback path, switching\/regulation pin and output capacitor ESR\.$/, 'Verificar caminho de feedback de $1, pino de chaveamento/regulação e ESR do capacitor de saída.')
+    .replace(/Trace/g, 'Rastrear')
+    .replace(/Probe/g, 'Medir')
+    .replace(/Check/g, 'Verificar')
+    .replace(/Capture/g, 'Capturar')
+    .replace(/Measure/g, 'Medir')
+    .replace(/Read or reflash/g, 'Ler ou regravar')
+    .replace(/main board/g, 'placa principal')
+    .replace(/during normal boot/g, 'durante a inicialização normal')
+    .replace(/during startup/g, 'durante a partida')
+    .replace(/firmware image/g, 'imagem de firmware')
+    .replace(/reset line release/g, 'liberação da linha de reset')
+    .replace(/crystal\/clock activity/g, 'atividade do cristal/clock')
+    .replace(/power-on/g, 'energização')
+    .replace(/additional voltage, resistance and control-signal measurements/g, 'medições adicionais de tensão, resistência e sinais de controle');
+}
+
+function translateLogMessage(value: string): string {
+  const exactTranslations: Record<string, string> = {
+    'PFC_PCTL forced -> 12V rail active': 'PFC_PCTL forçado -> trilho 12V ativo',
+    'Power supply classified as functional': 'Fonte classificada como funcional',
+    'Main board not releasing enable signals': 'Placa principal não libera sinais de enable',
+    'Probable short detected on target rail': 'Curto provável detectado no trilho alvo',
+    'Clock/reset anomaly detected': 'Anomalia de clock/reset detectada',
+    '3.3V rail detected': 'Trilho 3,3V detectado',
+    '1.2V core rail detected': 'Trilho core 1,2V detectado',
+    'PFC command absent': 'Comando PFC ausente',
+    'Firmware SPI suspected': 'Firmware SPI suspeito',
+  };
+  const translated = exactTranslations[value];
+
+  if (translated) {
+    return translated;
+  }
+
+  return value
+    .replace(/Target rail voltage/g, 'Tensão do trilho alvo')
+    .replace(/Injected current/g, 'Corrente injetada')
+    .replace(/Rail resistance/g, 'Resistência do trilho')
+    .replace(/12V rail initial/g, 'Trilho 12V inicial')
+    .replace(/12V rail after PFC_PCTL forced/g, 'Trilho 12V após PFC_PCTL forçado')
+    .replace(/3\.3V logic rail/g, 'Trilho lógico 3,3V')
+    .replace(/1\.2V core rail/g, 'Trilho core 1,2V')
+    .replace(/Power supply/g, 'Fonte')
+    .replace(/Main board/g, 'Placa principal')
+    .replace(/Boot\/Control Logic/g, 'Lógica de boot/controle')
+    .replace(/CPU Boot Failure/g, 'Falha de inicialização da CPU')
+    .replace(/Shorted Rail/g, 'Trilho em curto')
+    .replace(/Firmware SPI/g, 'Firmware SPI')
+    .replace(/active under forced command/g, 'ativo sob comando forçado')
+    .replace(/not releasing enable signals/g, 'não libera sinais de enable')
+    .replace(/classified as functional/g, 'classificada como funcional')
+    .replace(/suspected/g, 'suspeito')
+    .replace(/detected/g, 'detectado')
+    .replace(/absent/g, 'ausente')
+    .replace(/active/g, 'ativo')
+    .replace(/rail/g, 'trilho');
 }
 
 function translateMetricLabel(value: string): string {
@@ -321,7 +428,7 @@ function ArchitecturePanel({ result, scenario }: { result: DiagnosticResult; sce
         <article className="arch-box arch-engine">
           <BrainCircuit className="h-7 w-7" aria-hidden="true" />
           <strong>Motor de comportamento</strong>
-          <span>{clip(strongest, 34)}</span>
+          <span>{clip(translateDiagnosticText(strongest), 34)}</span>
         </article>
 
         <article className="arch-box arch-diagnostic">
@@ -333,7 +440,7 @@ function ArchitecturePanel({ result, scenario }: { result: DiagnosticResult; sce
         <article className="arch-box arch-cases">
           <Microscope className="h-5 w-5" aria-hidden="true" />
           <strong>Casos reais</strong>
-          <span>{scenario.name}</span>
+          <span>{translateDiagnosticText(scenario.name)}</span>
         </article>
 
         <article className="arch-box arch-library">
@@ -362,7 +469,7 @@ function FlowDataPanel() {
   const steps: FlowStep[] = [
     { label: 'Técnico / Bancada', detail: 'entrada real', icon: Microscope },
     { label: 'Medições', detail: 'tensão, corrente, resistência', icon: Gauge },
-    { label: 'Engine', detail: 'normalização e regras', icon: BrainCircuit },
+    { label: 'Motor', detail: 'normalização e regras', icon: BrainCircuit },
     { label: 'Hipóteses', detail: 'probabilidade técnica', icon: GitBranch },
     { label: 'Evidências', detail: 'sinais consolidados', icon: ShieldCheck },
   ];
@@ -444,12 +551,12 @@ function EvidencePanel({ result }: { result: DiagnosticResult }) {
 
 function KnowledgePanel() {
   const signatures = [
-    ['Buck Converter', 'POWER', 'ativa'],
+    ['Conversor Buck', 'POTÊNCIA', 'ativa'],
     ['LDO', 'REG', 'ativa'],
-    ['SPI Flash', 'DATA', 'observada'],
+    ['Memória Flash SPI', 'DADOS', 'observada'],
     ['Inicialização CPU', 'BOOT', 'ativa'],
-    ['Curto-circuito', 'SHORT', 'indexada'],
-    ['Clock / Reset', 'LOGIC', 'ativa'],
+    ['Curto-circuito', 'CURTO', 'indexada'],
+    ['Clock / Reset', 'LÓGICA', 'ativa'],
   ];
 
   return (
@@ -476,7 +583,7 @@ function InvestigationPanel({ result }: { result: DiagnosticResult }) {
     'Revisar reset',
     'Testar firmware SPI',
   ];
-  const tests = result.nextTests.length > 0 ? result.nextTests : fallbackTests;
+  const tests = (result.nextTests.length > 0 ? result.nextTests : fallbackTests).map(translateActionText);
 
   return (
     <Panel className="investigation-panel" title="PLANO DE INVESTIGAÇÃO" icon={ClipboardCheck}>
@@ -543,7 +650,7 @@ function LogsPanel({ logs }: { logs: EngineLog[] }) {
           <p key={`${log.level}-${log.message}-${index}`}>
             <time>{logTime(index)}</time>
             <strong className={logTagClass(log.level)}>{logTag(log.level)}</strong>
-            <code>{log.message}</code>
+            <code>{translateLogMessage(log.message)}</code>
             <em>{log.level === 'WARN' || log.level === 'FAIL' ? '400' : '200'}</em>
           </p>
         ))}

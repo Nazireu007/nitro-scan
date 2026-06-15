@@ -434,12 +434,12 @@ function ArchitecturePanel({ result, scenario }: { result: DiagnosticResult; sce
           </defs>
           <path d="M199 86 H266" />
           <path d="M454 86 H518" />
-          <path d="M112 128 V170 Q112 184 118 188" />
+          <path d="M112 128 V180" />
           <path d="M360 128 V170 H279 V222" />
           <path d="M360 128 V170 H438 V222" />
           <path d="M606 128 V180" />
-          <path d="M279 222 V205 H438 V222" />
-          <path d="M438 222 V204 H602 V180" />
+          <path d="M350 256 H366" />
+          <path d="M511 256 H540 V218 H513" />
         </svg>
 
         <article className="arch-box arch-input">
@@ -746,11 +746,11 @@ export function ArchitectureHero({
           <CircuitBoard className="h-8 w-8" aria-hidden="true" />
           <div>
             <h1>NITRO SCAN</h1>
-            <p>Universal Behavior Intelligence Platform</p>
+            <p>Plataforma Universal de Inteligência Comportamental</p>
           </div>
           <span>
             <RadioTower className="h-4 w-4" aria-hidden="true" />
-            core online
+            núcleo online
           </span>
         </div>
 

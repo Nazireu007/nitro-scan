@@ -1,6 +1,6 @@
 import { behaviorSignatures } from '../data/behaviorSignatures';
 import { diagnosticCases } from '../data/diagnosticCases';
-import type { DiagnosticResult as BehaviorDiagnosticResult, DiagnosticSession, Evidence, Hypothesis } from '../types/diagnostics';
+import type { DiagnosticResult as BehaviorDiagnosticResult, DiagnosticSession, Evidence, Hypothesis, NextTest } from '../types/diagnostics';
 import type { MeasurementInput, NormalizedMeasurement } from '../types/measurements';
 import { buildConclusionTexts, buildHypothesisEvidence, toLegacyEvidence, uniqueEvidences } from './evidenceBuilder';
 import { normalizeMeasurements } from './measurementNormalizer';
@@ -8,7 +8,7 @@ import { buildNextTests, toLegacyNextTests } from './nextTests';
 import { evaluateRules } from './ruleEvaluator';
 import { scoreHypotheses } from './scoring';
 import type {
-  DiagnosticResult,
+  DiagnosticResult as LegacyDiagnosticResult,
   DiagnosticScenario,
   EngineLog,
   Measurement,
@@ -35,6 +35,37 @@ const legacyCategoryByHypothesisId: Record<string, Suspect['category']> = {
   buck_converter: 'regulator',
   ldo_regulator: 'regulator',
 };
+
+const insufficientMeasurementTests: NextTest[] = [
+  {
+    id: 'manual-main-voltage',
+    title: 'Medir tensão principal.',
+    description: 'Confirmar se o trilho principal ou entrada de alimentação está presente no ponto de teste.',
+    priority: 1,
+    expectedResult: 'A tensão principal deve estar dentro da faixa esperada para a etapa medida.',
+  },
+  {
+    id: 'manual-gnd-resistance',
+    title: 'Medir resistência para GND.',
+    description: 'Medir a resistência do trilho suspeito para terra com a placa desligada.',
+    priority: 1,
+    safetyNote: 'Não energizar a placa durante o teste de resistência.',
+  },
+  {
+    id: 'manual-enable',
+    title: 'Verificar enable.',
+    description: 'Medir o sinal de enable/controle no CI regulador ou linha de comando.',
+    priority: 2,
+    expectedResult: 'O enable deve mudar de estado quando a sequência de power avança.',
+  },
+  {
+    id: 'manual-clock-reset',
+    title: 'Verificar clock/reset.',
+    description: 'Conferir se clock e reset são liberados durante a inicialização.',
+    priority: 2,
+    expectedResult: 'Clock deve oscilar e reset deve sair do estado travado.',
+  },
+];
 
 function legacyKindToType(kind: Measurement['kind']): MeasurementInput['type'] {
   if (kind === 'logic') {
@@ -123,6 +154,10 @@ function calculateHealthScore(session: DiagnosticSession, hypotheses: Hypothesis
 }
 
 function buildSummary(session: DiagnosticSession, hypotheses: Hypothesis[], evidences: Evidence[]): string {
+  if (evidences.some((evidence) => evidence.id === 'manual-insufficient-measurements')) {
+    return 'Medições insuficientes para diagnóstico confiável. Capturar tensão principal, resistência para GND, enable e clock/reset para melhorar a classificação.';
+  }
+
   if (session.id === 'lg-cj87-boot-failure') {
     return 'Fonte responde ao comando forçado, mas a placa principal não completa a sequência de boot/controle. Firmware SPI, Clock/Reset e inicialização da CPU seguem como hipóteses principais.';
   }
@@ -162,10 +197,28 @@ export function runBehaviorEngine(session: DiagnosticSession): BehaviorDiagnosti
   const measurements = normalizeMeasurements(session.measurements);
   const evaluation = evaluateRules(session, measurements, behaviorSignatures);
   const hypotheses = scoreHypotheses(evaluation.hypothesisSeeds);
-  const nextTests = buildNextTests(evaluation.nextTests, hypotheses);
-  const technicalEvidences = uniqueEvidences(evaluation.evidences);
+  const hasUsefulClassification = hypotheses.length > 0 || evaluation.evidences.some((evidence) => evidence.strength === 'strong');
+  const isInsufficient = !hasUsefulClassification;
+  const insufficientEvidence: Evidence[] = isInsufficient
+    ? [
+        {
+          id: 'manual-insufficient-measurements',
+          level: 'info',
+          text: 'Medições insuficientes para diagnóstico confiável.',
+          source: 'runBehaviorEngine',
+          relatedRule: 'manual-input',
+          relatedMeasurements: measurements.map((measurement) => measurement.id),
+          strength: 'weak',
+        },
+      ]
+    : [];
+  const nextTests = buildNextTests(
+    isInsufficient ? [...evaluation.nextTests, ...insufficientMeasurementTests] : evaluation.nextTests,
+    hypotheses,
+  );
+  const technicalEvidences = uniqueEvidences([...evaluation.evidences, ...insufficientEvidence]);
   const evidences = uniqueEvidences([...technicalEvidences, ...buildHypothesisEvidence(hypotheses)]);
-  const healthScore = calculateHealthScore(session, hypotheses);
+  const healthScore = isInsufficient ? 62 : calculateHealthScore(session, hypotheses);
 
   return {
     sessionId: session.id,
@@ -173,13 +226,28 @@ export function runBehaviorEngine(session: DiagnosticSession): BehaviorDiagnosti
     hypotheses,
     evidences,
     nextTests,
-    logs: [...evaluation.logs, ...hypothesisLogs(hypotheses)],
+    logs: [
+      ...evaluation.logs,
+      ...(isInsufficient
+        ? [
+            {
+              level: 'INFO' as const,
+              message: 'Medições insuficientes para diagnóstico confiável.',
+              source: 'runBehaviorEngine',
+            },
+          ]
+        : []),
+      ...hypothesisLogs(hypotheses),
+    ],
     summary: buildSummary(session, hypotheses, technicalEvidences),
   };
 }
 
-export function runDiagnosticScenario(scenario: DiagnosticScenario): DiagnosticResult {
-  const session = sessionFromScenario(scenario);
+function runDiagnosticSessionToLegacy(
+  session: DiagnosticSession,
+  scenarioName: string,
+  boardName: string,
+): LegacyDiagnosticResult {
   const measurements = normalizeMeasurements(session.measurements);
   const behaviorResult = runBehaviorEngine(session);
   const technicalEvidences = behaviorResult.evidences.filter((evidence) => !evidence.id.endsWith('-confidence'));
@@ -187,9 +255,9 @@ export function runDiagnosticScenario(scenario: DiagnosticScenario): DiagnosticR
   const suspects = toLegacySuspects(behaviorResult.hypotheses);
 
   return {
-    scenarioId: scenario.id,
-    scenarioName: scenario.name,
-    boardName: scenario.boardName,
+    scenarioId: session.id,
+    scenarioName,
+    boardName,
     healthPercentage: behaviorResult.healthScore,
     summary: behaviorResult.summary,
     conclusions,
@@ -202,4 +270,14 @@ export function runDiagnosticScenario(scenario: DiagnosticScenario): DiagnosticR
     })),
     monitorMetrics: buildMonitorMetrics(measurements, behaviorResult.healthScore),
   };
+}
+
+export function runDiagnosticScenario(scenario: DiagnosticScenario): LegacyDiagnosticResult {
+  const session = sessionFromScenario(scenario);
+
+  return runDiagnosticSessionToLegacy(session, scenario.name, scenario.boardName);
+}
+
+export function runDiagnosticSession(session: DiagnosticSession): LegacyDiagnosticResult {
+  return runDiagnosticSessionToLegacy(session, session.title, session.deviceCategory);
 }

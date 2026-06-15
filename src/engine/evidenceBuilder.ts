@@ -37,6 +37,10 @@ export function buildConclusionTexts(evidences: Evidence[]): string[] {
     conclusions.push('Curto provável detectado no trilho medido.');
   }
 
+  if (evidences.some((evidence) => evidence.id === 'manual-insufficient-measurements')) {
+    conclusions.push('Medições insuficientes para diagnóstico confiável.');
+  }
+
   return conclusions.length > 0 ? conclusions : ['Medições capturadas correspondem a um padrão diagnóstico conhecido.'];
 }
 

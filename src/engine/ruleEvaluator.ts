@@ -59,6 +59,59 @@ function findByLabel(measurements: NormalizedMeasurement[], label: string): Norm
   return measurements.find((measurement) => measurement.label.toLowerCase().includes(label.toLowerCase()));
 }
 
+function normalizedText(value: string | undefined): string {
+  return String(value ?? '')
+    .toLowerCase()
+    .replace(/[,_\-/]/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+function searchText(measurement: NormalizedMeasurement): string {
+  return [
+    measurement.id,
+    measurement.label,
+    measurement.node,
+    measurement.component,
+    measurement.context,
+  ]
+    .map((value) => normalizedText(value))
+    .join(' ');
+}
+
+function matchesAny(measurement: NormalizedMeasurement, patterns: string[]): boolean {
+  const source = searchText(measurement);
+
+  return patterns.some((pattern) => source.includes(normalizedText(pattern)));
+}
+
+function findMeasurement(
+  measurements: NormalizedMeasurement[],
+  patterns: string[],
+  predicate?: (measurement: NormalizedMeasurement) => boolean,
+): NormalizedMeasurement | undefined {
+  return measurements.find((measurement) => matchesAny(measurement, patterns) && (!predicate || predicate(measurement)));
+}
+
+function findPresentVoltage(measurements: NormalizedMeasurement[], patterns: string[]): NormalizedMeasurement | undefined {
+  return findMeasurement(measurements, patterns, (measurement) => measurement.type === 'voltage' && isVoltagePresent(measurement));
+}
+
+function findAbsentVoltage(measurements: NormalizedMeasurement[], patterns: string[]): NormalizedMeasurement | undefined {
+  return findMeasurement(measurements, patterns, (measurement) => measurement.type === 'voltage' && isVoltageAbsent(measurement));
+}
+
+function findForcedVoltage(measurements: NormalizedMeasurement[], patterns: string[]): NormalizedMeasurement | undefined {
+  return findMeasurement(
+    measurements,
+    patterns,
+    (measurement) =>
+      measurement.type === 'voltage' &&
+      isVoltagePresent(measurement) &&
+      (measurement.states.includes('forced_command_active') || matchesAny(measurement, ['forçado', 'forced', 'comando forçado'])),
+  );
+}
+
 function testFromSignature(signatureItem: BehaviorSignature): NextTest[] {
   return signatureItem.nextTests.map((test) => ({
     id: test.id,
@@ -72,39 +125,44 @@ function testFromSignature(signatureItem: BehaviorSignature): NextTest[] {
 
 function scanLogs(measurements: NormalizedMeasurement[]): DiagnosticLog[] {
   return measurements
-    .map<DiagnosticLog | null>((measurement) => {
+    .flatMap<DiagnosticLog>((measurement) => {
+      const receivedLog: DiagnosticLog = {
+        level: 'INFO',
+        message: `Medição manual recebida: ${measurement.node ?? measurement.label} = ${measurement.normalizedValue}.`,
+        source: 'measurementNormalizer',
+      };
+
       if (measurement.states.includes('forced_command_active')) {
-        return { level: 'TEST', message: `${measurement.label} ativo sob comando forçado`, source: 'measurementNormalizer' };
+        return [receivedLog, { level: 'TEST', message: `${measurement.label} ativo sob comando forçado`, source: 'measurementNormalizer' }];
       }
 
       if (measurement.isPresent) {
-        return { level: 'SCAN', message: `${measurement.label} detectado`, source: 'measurementNormalizer' };
+        return [receivedLog, { level: 'SCAN', message: `${measurement.label} detectado`, source: 'measurementNormalizer' }];
       }
 
       if (measurement.isAbsent) {
-        return { level: 'WARN', message: `${measurement.label} ausente`, source: 'measurementNormalizer' };
+        return [receivedLog, { level: 'WARN', message: `${measurement.label} ausente`, source: 'measurementNormalizer' }];
       }
 
       if (measurement.states.includes('low_resistance')) {
-        return { level: 'FAIL', message: `${measurement.label} baixa resistência: ${measurement.normalizedValue}`, source: 'measurementNormalizer' };
+        return [receivedLog, { level: 'FAIL', message: `${measurement.label} baixa resistência: ${measurement.normalizedValue}`, source: 'measurementNormalizer' }];
       }
 
       if (measurement.states.includes('current_high')) {
-        return { level: 'FAIL', message: `${measurement.label} corrente alta: ${measurement.normalizedValue}`, source: 'measurementNormalizer' };
+        return [receivedLog, { level: 'FAIL', message: `${measurement.label} corrente alta: ${measurement.normalizedValue}`, source: 'measurementNormalizer' }];
       }
 
-      return null;
-    })
-    .filter((log): log is DiagnosticLog => Boolean(log));
+      return [receivedLog];
+    });
 }
 
 export function evaluateVoltageRules(_session: DiagnosticSession, measurements: NormalizedMeasurement[]): RuleEvaluation {
   const evaluation = emptyEvaluation();
-  const standby5v = byId(measurements, 'standby_5v');
-  const rail14v = byId(measurements, 'rail_14v');
-  const rail12v = byId(measurements, 'rail_12v_initial');
-  const rail3v3 = byId(measurements, 'rail_3v3');
-  const rail1v2 = byId(measurements, 'rail_1v2');
+  const standby5v = byId(measurements, 'standby_5v') ?? findPresentVoltage(measurements, ['5v stby', '5 v stby', '5v standby', '5 v standby']);
+  const rail14v = byId(measurements, 'rail_14v') ?? findPresentVoltage(measurements, ['14v', '14 v']);
+  const rail12v = byId(measurements, 'rail_12v_initial') ?? findAbsentVoltage(measurements, ['12v', '12 v']);
+  const rail3v3 = byId(measurements, 'rail_3v3') ?? findPresentVoltage(measurements, ['3v3', '3,3 v', '3.3 v', '3 3 v']);
+  const rail1v2 = byId(measurements, 'rail_1v2') ?? findPresentVoltage(measurements, ['1v2', '1,2 v', '1.2 v', '1 2 v']);
 
   if (isVoltagePresent(standby5v) && isVoltagePresent(rail14v) && isVoltageAbsent(rail12v)) {
     evaluation.evidences.push({
@@ -155,8 +213,8 @@ export function evaluateResistanceRules(_session: DiagnosticSession, measurement
 
 export function evaluateSignalRules(_session: DiagnosticSession, measurements: NormalizedMeasurement[]): RuleEvaluation {
   const evaluation = emptyEvaluation();
-  const pfcCommand = byId(measurements, 'pfc_pctl');
-  const l304Activity = byId(measurements, 'l304_activity');
+  const pfcCommand = byId(measurements, 'pfc_pctl') ?? findMeasurement(measurements, ['pfc pctl', 'pfc_pctl']);
+  const l304Activity = byId(measurements, 'l304_activity') ?? findMeasurement(measurements, ['l304']);
 
   if (isSignalAbsent(pfcCommand)) {
     evaluation.evidences.push({
@@ -227,7 +285,12 @@ export function evaluateShortRules(signatures: BehaviorSignature[], measurements
     contributions: lowResistance && highCurrent ? ['strong', 'strong'] : ['strong'],
   });
   evaluation.nextTests.push(...testFromSignature(shortSignature));
-  evaluation.logs.push({ level: 'FAIL', message: 'Curto provável detectado no trilho alvo', source: 'evaluateShortRules' });
+  evaluation.logs.push(
+    { level: 'FAIL', message: 'Curto provável detectado no trilho alvo', source: 'evaluateShortRules' },
+    { level: 'AI', message: 'Assinatura comportamental compatível: Linha em curto', source: 'evaluateShortRules' },
+    { level: 'AI', message: 'Hipótese gerada: capacitor ou CI em curto', source: 'evaluateShortRules' },
+    { level: 'TEST', message: 'Próximo teste sugerido: injeção limitada', source: 'evaluateShortRules' },
+  );
 
   return evaluation;
 }
@@ -236,11 +299,13 @@ export function evaluateBootRules(session: DiagnosticSession, signatures: Behavi
   const evaluation = emptyEvaluation();
   const cpuSignature = signature(signatures, 'cpu-no-activity');
   const spiSignature = signature(signatures, 'spi-powered-no-boot');
-  const rail3v3 = byId(measurements, 'rail_3v3');
-  const rail1v2 = byId(measurements, 'rail_1v2');
-  const spiVcc = byId(measurements, 'spi_vcc');
-  const cpuTemperature = byId(measurements, 'cpu_temperature');
-  const pfcCommand = byId(measurements, 'pfc_pctl');
+  const rail3v3 = byId(measurements, 'rail_3v3') ?? findPresentVoltage(measurements, ['3v3', '3,3 v', '3.3 v', '3 3 v']);
+  const rail1v2 = byId(measurements, 'rail_1v2') ?? findPresentVoltage(measurements, ['1v2', '1,2 v', '1.2 v', '1 2 v']);
+  const spiVcc = byId(measurements, 'spi_vcc') ?? findPresentVoltage(measurements, ['spi vcc', 'spi_vcc']);
+  const cpuTemperature =
+    byId(measurements, 'cpu_temperature') ??
+    findMeasurement(measurements, ['cpu', 'processador'], (measurement) => measurement.type === 'temperature' || matchesAny(measurement, ['sem atividade', 'fria', 'cold']));
+  const pfcCommand = byId(measurements, 'pfc_pctl') ?? findMeasurement(measurements, ['pfc pctl', 'pfc_pctl']);
   const mainRailsPresent = isVoltagePresent(rail3v3) && isVoltagePresent(rail1v2);
   const cpuCold = hasState(cpuTemperature, 'temperature_cold');
   const pfcAbsent = isSignalAbsent(pfcCommand);
@@ -296,6 +361,7 @@ export function evaluateBootRules(session: DiagnosticSession, signatures: Behavi
     evaluation.conclusions.push('A placa principal não inicializa a sequência de boot/controle.');
     evaluation.nextTests.push(...testFromSignature(cpuSignature));
     evaluation.logs.push({ level: 'WARN', message: 'Placa principal não libera sinais de boot/controle', source: 'evaluateBootRules' });
+    evaluation.logs.push({ level: 'AI', message: 'Assinatura comportamental compatível: CPU sem atividade', source: 'evaluateBootRules' });
   }
 
   if (isVoltagePresent(spiVcc) && cpuCold) {
@@ -321,6 +387,7 @@ export function evaluateBootRules(session: DiagnosticSession, signatures: Behavi
     });
     evaluation.nextTests.push(...testFromSignature(spiSignature));
     evaluation.logs.push({ level: 'AI', message: 'Firmware SPI suspeito', source: 'evaluateBootRules' });
+    evaluation.logs.push({ level: 'AI', message: 'Assinatura comportamental compatível: SPI alimentada sem boot', source: 'evaluateBootRules' });
   }
 
   return evaluation;
@@ -329,8 +396,8 @@ export function evaluateBootRules(session: DiagnosticSession, signatures: Behavi
 export function evaluateForcedCommandRules(signatures: BehaviorSignature[], measurements: NormalizedMeasurement[]): RuleEvaluation {
   const evaluation = emptyEvaluation();
   const forcedSignature = signature(signatures, 'forced-command-functional-source');
-  const initial12v = byId(measurements, 'rail_12v_initial');
-  const forced12v = byId(measurements, 'rail_12v_forced');
+  const initial12v = byId(measurements, 'rail_12v_initial') ?? findAbsentVoltage(measurements, ['12v', '12 v']);
+  const forced12v = byId(measurements, 'rail_12v_forced') ?? findForcedVoltage(measurements, ['12v', '12 v', 'pfc pctl', 'pfc_pctl']);
 
   if (!isVoltageAbsent(initial12v) || !isVoltagePresent(forced12v)) {
     return evaluation;
@@ -384,6 +451,7 @@ export function evaluateForcedCommandRules(signatures: BehaviorSignature[], meas
   evaluation.logs.push(
     { level: 'TEST', message: 'PFC_PCTL forçado -> trilho de 12 V ativo', source: 'evaluateForcedCommandRules' },
     { level: 'AI', message: 'Fonte classificada como funcional', source: 'evaluateForcedCommandRules' },
+    { level: 'AI', message: 'Assinatura comportamental compatível: Fonte funcional com comando forçado', source: 'evaluateForcedCommandRules' },
   );
 
   return evaluation;
@@ -394,11 +462,11 @@ export function evaluateRegulatorRules(signatures: BehaviorSignature[], measurem
   const buckNoEnable = signature(signatures, 'buck-no-enable');
   const buckNoOutput = signature(signatures, 'buck-vin-enable-no-output');
   const ldoNoOutput = signature(signatures, 'ldo-no-output');
-  const buckVin = findByLabel(measurements, 'Buck VIN');
-  const buckEnable = findByLabel(measurements, 'Buck ENABLE');
-  const buckVout = findByLabel(measurements, 'Buck VOUT');
-  const ldoInput = findByLabel(measurements, 'LDO input');
-  const ldoOutput = findByLabel(measurements, 'LDO output');
+  const buckVin = findByLabel(measurements, 'Buck VIN') ?? findMeasurement(measurements, ['buck vin', 'vin', 'entrada buck']);
+  const buckEnable = findByLabel(measurements, 'Buck ENABLE') ?? findMeasurement(measurements, ['buck enable', 'enable']);
+  const buckVout = findByLabel(measurements, 'Buck VOUT') ?? findMeasurement(measurements, ['buck vout', 'vout', 'saída buck', 'saida buck']);
+  const ldoInput = findByLabel(measurements, 'LDO input') ?? findMeasurement(measurements, ['ldo input', 'entrada ldo']);
+  const ldoOutput = findByLabel(measurements, 'LDO output') ?? findMeasurement(measurements, ['ldo output', 'saída ldo', 'saida ldo']);
 
   if (isVoltagePresent(buckVin) && isSignalAbsent(buckEnable) && isVoltageAbsent(buckVout)) {
     evaluation.evidences.push({
@@ -422,6 +490,7 @@ export function evaluateRegulatorRules(signatures: BehaviorSignature[], measurem
       contributions: ['strong', 'medium'],
     });
     evaluation.nextTests.push(...testFromSignature(buckNoEnable));
+    evaluation.logs.push({ level: 'AI', message: 'Assinatura comportamental compatível: Buck sem enable', source: 'evaluateRegulatorRules' });
   }
 
   if (isVoltagePresent(buckVin) && isSignalPresent(buckEnable) && isVoltageAbsent(buckVout)) {
@@ -446,6 +515,7 @@ export function evaluateRegulatorRules(signatures: BehaviorSignature[], measurem
       contributions: ['strong', 'strong', 'medium'],
     });
     evaluation.nextTests.push(...testFromSignature(buckNoOutput));
+    evaluation.logs.push({ level: 'AI', message: 'Assinatura comportamental compatível: Buck com VIN e enable, mas sem saída', source: 'evaluateRegulatorRules' });
   }
 
   if (isVoltagePresent(ldoInput) && isVoltageAbsent(ldoOutput)) {
@@ -470,6 +540,7 @@ export function evaluateRegulatorRules(signatures: BehaviorSignature[], measurem
       contributions: ['strong', 'strong'],
     });
     evaluation.nextTests.push(...testFromSignature(ldoNoOutput));
+    evaluation.logs.push({ level: 'AI', message: 'Assinatura comportamental compatível: LDO sem saída', source: 'evaluateRegulatorRules' });
   }
 
   return evaluation;

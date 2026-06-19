@@ -1,3 +1,4 @@
+import { useEffect, useRef } from 'react';
 import { Activity } from 'lucide-react';
 import type { ConfirmationState } from '../types/measurements';
 
@@ -6,7 +7,193 @@ type WaveScopeProps = {
   signalLabel: string;
 };
 
+type ScopePalette = {
+  primary: string;
+  return: string;
+};
+
+type WaveConfig = {
+  color: string;
+  centerRatio: number;
+  amplitudeRatio: number;
+  frequency: number;
+  phaseSpeed: number;
+  phaseOffset: number;
+  lineWidth: number;
+  glow: number;
+  alpha: number;
+  dashed?: boolean;
+};
+
+const scopePalettes: Record<ConfirmationState, ScopePalette> = {
+  detected: { primary: '#22dfff', return: '#ff2bd6' },
+  correlated: { primary: '#22dfff', return: '#ff2bd6' },
+  strong_indication: { primary: '#f5bd52', return: '#ff2bd6' },
+  confirmed: { primary: '#74f7b0', return: '#22dfff' },
+};
+
+function drawLiveWave(
+  context: CanvasRenderingContext2D,
+  width: number,
+  height: number,
+  seconds: number,
+  config: WaveConfig,
+) {
+  const centerY = height * config.centerRatio;
+  const baseAmplitude = Math.max(10, height * config.amplitudeRatio);
+  const phase = seconds * config.phaseSpeed + config.phaseOffset;
+  const step = Math.max(2.5, Math.min(5, width / 220));
+
+  context.beginPath();
+
+  for (let x = -step; x <= width + step; x += step) {
+    const envelope =
+      0.94 +
+      Math.sin(x * 0.010 - phase * 0.55) * 0.16 +
+      Math.sin(x * 0.022 + phase * 0.22) * 0.08;
+    const carrier = Math.sin(x * config.frequency + phase);
+    const harmonic = Math.sin(x * config.frequency * 1.92 - phase * 1.38) * 0.28;
+    const ripple = Math.sin(x * config.frequency * 3.55 + phase * 2.15) * 0.08;
+    const peakShape = Math.sin(x * config.frequency * 0.52 + phase * 0.78);
+    const sharperPeaks = Math.sign(peakShape) * Math.pow(Math.abs(peakShape), 5) * 0.16;
+    const y = centerY + (carrier + harmonic + ripple + sharperPeaks) * baseAmplitude * envelope;
+
+    if (x === -step) {
+      context.moveTo(x, y);
+    } else {
+      context.lineTo(x, y);
+    }
+  }
+
+  context.globalAlpha = config.alpha;
+  context.lineWidth = config.lineWidth;
+  context.strokeStyle = config.color;
+  context.shadowColor = config.color;
+  context.shadowBlur = config.glow;
+  context.lineCap = 'round';
+  context.lineJoin = 'round';
+  context.setLineDash(config.dashed ? [7, 7] : []);
+  context.stroke();
+
+  context.globalAlpha = Math.min(config.alpha + 0.12, 0.9);
+  context.lineWidth = Math.max(1, config.lineWidth * 0.48);
+  context.shadowBlur = 0;
+  context.stroke();
+}
+
 export function WaveScope({ state, signalLabel }: WaveScopeProps) {
+  const canvasRef = useRef<HTMLCanvasElement | null>(null);
+
+  useEffect(() => {
+    const canvasElement = canvasRef.current;
+
+    if (!canvasElement) {
+      return undefined;
+    }
+
+    const canvasContext = canvasElement.getContext('2d', { alpha: true });
+
+    if (!canvasContext) {
+      return undefined;
+    }
+
+    const canvas = canvasElement;
+    const context = canvasContext;
+    const palette = scopePalettes[state];
+    const motionQuery = window.matchMedia('(prefers-reduced-motion: reduce)');
+    let animationFrame = 0;
+    let canvasWidth = 0;
+    let canvasHeight = 0;
+    let pixelRatio = 1;
+    let isReducedMotion = motionQuery.matches;
+
+    function resizeCanvas() {
+      const bounds = canvas.getBoundingClientRect();
+      const nextWidth = Math.max(1, Math.floor(bounds.width));
+      const nextHeight = Math.max(1, Math.floor(bounds.height));
+      const nextPixelRatio = Math.min(window.devicePixelRatio || 1, 2);
+
+      if (nextWidth === canvasWidth && nextHeight === canvasHeight && nextPixelRatio === pixelRatio) {
+        return;
+      }
+
+      canvasWidth = nextWidth;
+      canvasHeight = nextHeight;
+      pixelRatio = nextPixelRatio;
+      canvas.width = Math.floor(canvasWidth * pixelRatio);
+      canvas.height = Math.floor(canvasHeight * pixelRatio);
+      context.setTransform(pixelRatio, 0, 0, pixelRatio, 0, 0);
+    }
+
+    function drawFrame(timestamp = 0) {
+      resizeCanvas();
+      const seconds = isReducedMotion ? 0 : timestamp * 0.001;
+
+      context.clearRect(0, 0, canvasWidth, canvasHeight);
+      context.globalCompositeOperation = 'source-over';
+
+      drawLiveWave(context, canvasWidth, canvasHeight, seconds, {
+        color: palette.return,
+        centerRatio: 0.56,
+        amplitudeRatio: 0.105,
+        frequency: 0.030,
+        phaseSpeed: 2.15,
+        phaseOffset: 1.55,
+        lineWidth: 1.45,
+        glow: 9,
+        alpha: 0.46,
+        dashed: true,
+      });
+
+      drawLiveWave(context, canvasWidth, canvasHeight, seconds, {
+        color: palette.primary,
+        centerRatio: 0.49,
+        amplitudeRatio: 0.215,
+        frequency: 0.038,
+        phaseSpeed: 2.75,
+        phaseOffset: 0,
+        lineWidth: 2.1,
+        glow: 12,
+        alpha: 0.76,
+      });
+
+      context.globalAlpha = 1;
+      context.setLineDash([]);
+    }
+
+    function tick(timestamp: number) {
+      drawFrame(timestamp);
+      if (!isReducedMotion) {
+        animationFrame = window.requestAnimationFrame(tick);
+      }
+    }
+
+    function startAnimation() {
+      window.cancelAnimationFrame(animationFrame);
+      drawFrame();
+
+      if (!isReducedMotion) {
+        animationFrame = window.requestAnimationFrame(tick);
+      }
+    }
+
+    function handleMotionChange(event: MediaQueryListEvent) {
+      isReducedMotion = event.matches;
+      startAnimation();
+    }
+
+    const resizeObserver = new ResizeObserver(() => startAnimation());
+    resizeObserver.observe(canvas);
+    motionQuery.addEventListener('change', handleMotionChange);
+    startAnimation();
+
+    return () => {
+      window.cancelAnimationFrame(animationFrame);
+      resizeObserver.disconnect();
+      motionQuery.removeEventListener('change', handleMotionChange);
+    };
+  }, [state]);
+
   return (
     <section className={`wave-scope wave-scope-${state}`} aria-label="Telemetria de sinal e resposta">
       <header className="wave-scope-header">
@@ -24,19 +211,7 @@ export function WaveScope({ state, signalLabel }: WaveScopeProps) {
           <line className="scope-guide scope-guide-low" x1="0" y1="150" x2="720" y2="150" />
         </svg>
 
-        <svg className="scope-wave-layer scope-wave-layer-primary" viewBox="0 0 1440 220" preserveAspectRatio="none">
-          <g className="scope-wave-trace scope-wave-primary">
-            <path d="M0 110 C25 110 30 54 56 54 S88 166 116 166 S150 78 180 78 S214 142 244 142 S278 94 306 94 S338 128 366 128 S400 44 430 44 S462 176 492 176 S524 86 552 86 S584 134 612 134 S646 110 720 110" />
-            <path d="M720 110 C745 110 750 54 776 54 S808 166 836 166 S870 78 900 78 S934 142 964 142 S998 94 1026 94 S1058 128 1086 128 S1120 44 1150 44 S1182 176 1212 176 S1244 86 1272 86 S1304 134 1332 134 S1366 110 1440 110" />
-          </g>
-        </svg>
-
-        <svg className="scope-wave-layer scope-wave-layer-return" viewBox="0 0 1440 220" preserveAspectRatio="none">
-          <g className="scope-wave-trace scope-wave-return">
-            <path d="M0 126 C38 126 44 96 72 96 S110 146 142 146 S178 108 210 108 S248 138 280 138 S316 116 350 116 S388 132 420 132 S458 102 492 102 S530 142 564 142 S602 118 636 118 S674 126 720 126" />
-            <path d="M720 126 C758 126 764 96 792 96 S830 146 862 146 S898 108 930 108 S968 138 1000 138 S1036 116 1070 116 S1108 132 1140 132 S1178 102 1212 102 S1250 142 1284 142 S1322 118 1356 118 S1394 126 1440 126" />
-          </g>
-        </svg>
+        <canvas ref={canvasRef} className="scope-wave-canvas" />
 
         <span className="scope-cursor" />
       </div>

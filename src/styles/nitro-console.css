@@ -308,29 +308,22 @@
 }
 
 .scope-frame,
-.scope-wave-layer {
+.scope-wave-canvas {
   position: absolute;
   inset: 0;
   height: 100%;
-  overflow: visible;
 }
 
 .scope-frame {
   z-index: 1;
   width: 100%;
+  overflow: visible;
 }
 
-.scope-wave-layer {
+.scope-wave-canvas {
   z-index: 2;
-  width: 200%;
-  transform: translate3d(0, 0, 0);
-  animation: nitroWaveShift 7.4s linear infinite;
-  will-change: transform;
-}
-
-.scope-wave-layer-return {
-  animation-delay: -2.1s;
-  animation-duration: 10.8s;
+  width: 100%;
+  pointer-events: none;
 }
 
 .scope-baseline {
@@ -343,37 +336,6 @@
   stroke: rgba(34, 223, 255, 0.07);
   stroke-width: 1;
   stroke-dasharray: 2 14;
-}
-
-.scope-wave-trace path {
-  fill: none;
-  stroke-linecap: round;
-  stroke-linejoin: round;
-  vector-effect: non-scaling-stroke;
-}
-
-.scope-wave-primary,
-.scope-wave-return {
-  color: var(--scope-primary);
-  filter: drop-shadow(0 0 7px currentColor);
-}
-
-.scope-wave-primary path {
-  stroke: currentColor;
-  stroke-width: 2.2;
-  opacity: 0.78;
-}
-
-.scope-wave-return {
-  color: var(--scope-return);
-  filter: drop-shadow(0 0 6px currentColor);
-}
-
-.scope-wave-return path {
-  stroke: currentColor;
-  stroke-width: 1.5;
-  stroke-dasharray: 6 5;
-  opacity: 0.52;
 }
 
 .scope-cursor {
@@ -1150,10 +1112,6 @@
   color: #607c90;
 }
 
-@keyframes nitroWaveShift {
-  to { transform: translate3d(-50%, 0, 0); }
-}
-
 @keyframes nitroScopeCursor {
   0% { transform: translate3d(-8%, 0, 0); opacity: 0; }
   10% { opacity: 0.45; }
@@ -1449,7 +1407,6 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .scope-wave-layer,
   .scope-cursor,
   .nitro-core-visual::before,
   .nitro-core-visual::after,

@@ -31,7 +31,6 @@ function lgCaseInput(): ConsoleScanInput {
 export function NitroConsole() {
   const [input, setInput] = useState<ConsoleScanInput>(lgCaseInput);
   const [analysis, setAnalysis] = useState<ConsoleAnalysis>(() => loadLgConsoleCase());
-  const [activityKey, setActivityKey] = useState(1);
   const modeLabel = useMemo(
     () => consoleTestModeOptions.find((option) => option.value === input.testMode)?.label ?? 'Scan offline',
     [input.testMode],
@@ -39,7 +38,6 @@ export function NitroConsole() {
 
   function commitAnalysis(nextAnalysis: ConsoleAnalysis) {
     setAnalysis(nextAnalysis);
-    setActivityKey((current) => current + 1);
   }
 
   function analyze() {
@@ -70,13 +68,12 @@ export function NitroConsole() {
         <div className="nitro-console-main">
           <section className="nitro-console-stage" aria-label="Núcleo, telemetria e diagnóstico">
             <div className="nitro-signal-stage">
-              <WaveScope state={analysis.confirmationState} signalLabel={modeLabel} activityKey={activityKey} />
+              <WaveScope state={analysis.confirmationState} signalLabel={modeLabel} />
               <NitroCorePanel
                 confidence={analysis.confidence}
                 events={analysis.result.logs.length}
                 health={analysis.result.healthScore}
                 state={analysis.confirmationState}
-                activityKey={activityKey}
               />
             </div>
             <ScanResultPanel analysis={analysis} />
@@ -100,4 +97,3 @@ export function NitroConsole() {
     </main>
   );
 }
-

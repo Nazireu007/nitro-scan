@@ -224,11 +224,24 @@
     #030813;
 }
 
+.nitro-signal-stage::before {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  content: '';
+  background:
+    linear-gradient(90deg, transparent 0 14%, rgba(34, 223, 255, 0.055) 35%, rgba(255, 43, 214, 0.04) 50%, rgba(34, 223, 255, 0.055) 65%, transparent 86%),
+    linear-gradient(180deg, transparent, rgba(34, 223, 255, 0.045), transparent);
+  opacity: 0.72;
+}
+
 .wave-scope {
   --scope-primary: var(--console-cyan);
   --scope-return: var(--console-magenta);
   position: absolute;
   inset: 0;
+  z-index: 1;
   display: grid;
   min-width: 0;
   grid-template-rows: auto minmax(0, 1fr) auto;
@@ -294,12 +307,30 @@
   mask-image: linear-gradient(90deg, transparent, black 8%, black 92%, transparent);
 }
 
-.wave-scope-grid svg {
+.scope-frame,
+.scope-wave-layer {
   position: absolute;
   inset: 0;
-  width: 100%;
   height: 100%;
   overflow: visible;
+}
+
+.scope-frame {
+  z-index: 1;
+  width: 100%;
+}
+
+.scope-wave-layer {
+  z-index: 2;
+  width: 200%;
+  transform: translate3d(0, 0, 0);
+  animation: nitroWaveShift 7.4s linear infinite;
+  will-change: transform;
+}
+
+.scope-wave-layer-return {
+  animation-delay: -2.1s;
+  animation-duration: 10.8s;
 }
 
 .scope-baseline {
@@ -308,39 +339,65 @@
   stroke-dasharray: 4 8;
 }
 
-.scope-wave-track {
-  animation: nitroWaveShift 8s linear infinite;
+.scope-guide {
+  stroke: rgba(34, 223, 255, 0.07);
+  stroke-width: 1;
+  stroke-dasharray: 2 14;
 }
 
-.scope-wave-track path {
+.scope-wave-trace path {
   fill: none;
   stroke-linecap: round;
   stroke-linejoin: round;
   vector-effect: non-scaling-stroke;
 }
 
+.scope-wave-primary,
+.scope-wave-return {
+  color: var(--scope-primary);
+  filter: drop-shadow(0 0 7px currentColor);
+}
+
 .scope-wave-primary path {
-  stroke: var(--scope-primary);
+  stroke: currentColor;
   stroke-width: 2.2;
-  opacity: 0.74;
+  opacity: 0.78;
 }
 
 .scope-wave-return {
-  animation-duration: 11s;
+  color: var(--scope-return);
+  filter: drop-shadow(0 0 6px currentColor);
 }
 
 .scope-wave-return path {
-  stroke: var(--scope-return);
+  stroke: currentColor;
   stroke-width: 1.5;
   stroke-dasharray: 6 5;
-  opacity: 0.48;
+  opacity: 0.52;
 }
 
 .scope-cursor {
-  stroke: rgba(255, 255, 255, 0.28);
-  stroke-width: 1;
-  stroke-dasharray: 3 5;
-  animation: nitroScopeCursor 4.5s ease-in-out infinite;
+  position: absolute;
+  top: 7%;
+  bottom: 7%;
+  left: 0;
+  z-index: 3;
+  width: 100%;
+  pointer-events: none;
+  transform: translate3d(-8%, 0, 0);
+  animation: nitroScopeCursor 5.6s linear infinite;
+  will-change: transform, opacity;
+}
+
+.scope-cursor::before {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  width: 1px;
+  content: '';
+  background: linear-gradient(180deg, transparent, rgba(255, 255, 255, 0.72), transparent);
+  box-shadow: 0 0 14px rgba(34, 223, 255, 0.42), 0 0 28px rgba(255, 43, 214, 0.16);
 }
 
 .wave-scope-footer {
@@ -377,11 +434,13 @@
 }
 
 .console-core-panel {
+  --core-accent: var(--console-cyan);
+  --core-secondary: var(--console-magenta);
   position: absolute;
   inset: 2.35rem 0 1.8rem;
   z-index: 3;
   display: grid;
-  width: min(430px, 58%);
+  width: min(460px, 62%);
   grid-template-rows: minmax(0, 1fr) auto;
   place-items: center;
   margin: auto;
@@ -391,9 +450,10 @@
 .nitro-core-visual {
   position: relative;
   display: grid;
-  width: 196px;
+  width: 224px;
   aspect-ratio: 1;
   place-items: center;
+  color: var(--core-accent);
 }
 
 .nitro-core-visual::before,
@@ -404,81 +464,199 @@
 }
 
 .nitro-core-visual::before {
-  inset: 24%;
-  border: 1px solid rgba(34, 223, 255, 0.42);
+  inset: 11%;
+  border: 1px solid color-mix(in srgb, var(--core-accent) 42%, transparent);
   border-radius: 50%;
-  box-shadow: 0 0 34px rgba(34, 223, 255, 0.34), inset 0 0 24px rgba(139, 44, 255, 0.2);
+  box-shadow:
+    0 0 34px color-mix(in srgb, var(--core-accent) 28%, transparent),
+    inset 0 0 22px rgba(139, 44, 255, 0.16);
   animation: nitroCoreBreath 3.6s ease-in-out infinite;
 }
 
 .nitro-core-visual::after {
-  inset: 5%;
-  border: 1px dashed rgba(255, 43, 214, 0.24);
+  inset: 3%;
+  border: 1px dashed color-mix(in srgb, var(--core-secondary) 28%, transparent);
   border-radius: 50%;
-  animation: nitroCoreSpin 18s linear infinite;
+  opacity: 0.86;
+  animation: nitroCoreSpin 22s linear infinite;
 }
 
-.nitro-core-visual img {
-  width: 164px;
-  height: 164px;
-  object-fit: contain;
-  opacity: 0.88;
-  filter: saturate(1.14) contrast(1.08) drop-shadow(0 0 18px rgba(34, 223, 255, 0.34));
+.nitro-core-halo {
+  position: absolute;
+  inset: 22%;
+  border: 1px solid color-mix(in srgb, var(--core-accent) 32%, transparent);
+  border-radius: 50%;
+  background:
+    radial-gradient(circle, color-mix(in srgb, var(--core-accent) 18%, transparent), transparent 56%),
+    radial-gradient(circle, rgba(255, 43, 214, 0.1), transparent 68%);
+  box-shadow: 0 0 42px color-mix(in srgb, var(--core-accent) 18%, transparent);
+  opacity: 0.82;
+  animation: nitroCorePulse 4.8s ease-in-out infinite;
 }
 
 .nitro-core-orbit {
   position: absolute;
-  border: 1px solid rgba(34, 223, 255, 0.18);
+  border: 1px solid color-mix(in srgb, var(--core-accent) 18%, transparent);
   border-radius: 50%;
 }
 
 .nitro-core-orbit-a {
   inset: 0;
-  animation: nitroCoreSpin 14s linear infinite reverse;
+  animation: nitroCoreSpin 18s linear infinite reverse;
 }
 
 .nitro-core-orbit-b {
-  inset: 14%;
-  border-color: rgba(139, 44, 255, 0.24);
-  animation: nitroCoreSpin 9s linear infinite;
+  inset: 17%;
+  border-color: color-mix(in srgb, var(--core-secondary) 24%, transparent);
+  animation: nitroCoreSpin 13s linear infinite;
+}
+
+.nitro-core-module {
+  position: relative;
+  z-index: 2;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+  filter: drop-shadow(0 0 18px color-mix(in srgb, var(--core-accent) 34%, transparent));
+}
+
+.nitro-core-trace,
+.nitro-core-pins path,
+.nitro-core-signal,
+.nitro-core-axis {
+  fill: none;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  vector-effect: non-scaling-stroke;
+}
+
+.nitro-core-trace {
+  stroke: url(#nitroCoreTrace);
+  stroke-width: 1.8;
+  stroke-dasharray: 62 170;
+  opacity: 0.72;
+  animation: nitroCoreTraceFlow 5.8s linear infinite;
+}
+
+.nitro-core-trace-secondary {
+  stroke-dasharray: 46 150;
+  opacity: 0.5;
+  animation-delay: -1.8s;
+  animation-duration: 7.2s;
+}
+
+.nitro-core-trace-uplink {
+  stroke: color-mix(in srgb, var(--core-accent) 54%, transparent);
+  stroke-dasharray: 36 110;
+  animation-duration: 6.6s;
+}
+
+.nitro-core-pins path {
+  stroke: color-mix(in srgb, var(--core-accent) 46%, transparent);
+  stroke-width: 2;
+}
+
+.nitro-core-node {
+  fill: var(--core-accent);
+  filter: drop-shadow(0 0 8px currentColor);
+  opacity: 0.9;
+  transform-origin: center;
+  animation: nitroCoreNodePulse 3.4s ease-in-out infinite;
+}
+
+.nitro-core-node-secondary {
+  fill: var(--core-secondary);
+  animation-delay: -1.2s;
+}
+
+.nitro-core-chip-shadow {
+  fill: rgba(0, 0, 0, 0.32);
+}
+
+.nitro-core-chip-shell {
+  fill: url(#nitroCoreShell);
+  stroke: color-mix(in srgb, var(--core-accent) 58%, transparent);
+  stroke-width: 1.4;
+}
+
+.nitro-core-chip-ring {
+  fill: rgba(3, 8, 19, 0.62);
+  stroke: rgba(255, 255, 255, 0.1);
+  stroke-width: 1;
+}
+
+.nitro-core-die {
+  fill: url(#nitroCoreDie);
+  opacity: 0.86;
+  transform-origin: 120px 120px;
+  animation: nitroCoreDiePulse 3.8s ease-in-out infinite;
+}
+
+.nitro-core-signal {
+  stroke: rgba(255, 255, 255, 0.78);
+  stroke-width: 1.4;
+  stroke-dasharray: 34 62;
+  opacity: 0.78;
+  animation: nitroCoreSignal 3.1s linear infinite;
+}
+
+.nitro-core-signal-b {
+  stroke: var(--core-secondary);
+  opacity: 0.58;
+  animation-delay: -1.4s;
+}
+
+.nitro-core-axis {
+  stroke: color-mix(in srgb, var(--core-accent) 34%, transparent);
+  stroke-width: 1;
+  opacity: 0.42;
 }
 
 .nitro-core-title {
   position: absolute;
+  right: 50%;
+  bottom: 7%;
+  z-index: 4;
   display: grid;
+  min-width: 7.7rem;
   place-items: center;
+  border: 1px solid color-mix(in srgb, var(--core-accent) 22%, transparent);
+  border-radius: 5px;
+  padding: 0.28rem 0.48rem 0.3rem;
+  background: rgba(3, 8, 19, 0.78);
+  box-shadow: 0 0 18px rgba(3, 8, 19, 0.82), inset 0 0 18px rgba(34, 223, 255, 0.035);
   text-align: center;
-  text-shadow: 0 0 12px rgba(34, 223, 255, 0.62);
-}
-
-.nitro-core-title span,
-.nitro-core-title small {
-  color: #83d9e8;
-  font-size: 0.56rem;
-  font-weight: 900;
-  text-transform: uppercase;
+  text-shadow: 0 0 12px color-mix(in srgb, var(--core-accent) 52%, transparent);
+  transform: translateX(50%);
 }
 
 .nitro-core-title strong {
   color: #ffffff;
-  font-size: 1.18rem;
+  font-size: 0.74rem;
   font-weight: 950;
+  line-height: 1.05;
+  white-space: nowrap;
 }
 
 .nitro-core-title small {
-  margin-top: 0.18rem;
-  color: #9e77e8;
-  font-size: 0.48rem;
+  margin-top: 0.16rem;
+  color: color-mix(in srgb, var(--core-secondary) 62%, #cdefff);
+  font-size: 0.46rem;
+  font-weight: 900;
+  line-height: 1;
+  text-transform: uppercase;
+  white-space: nowrap;
 }
 
 .nitro-core-metrics {
   display: grid;
   width: 100%;
   grid-template-columns: repeat(4, minmax(0, 1fr));
-  border: 1px solid rgba(34, 223, 255, 0.16);
+  border: 1px solid color-mix(in srgb, var(--core-accent) 18%, transparent);
   border-radius: 6px;
   background: rgba(3, 8, 19, 0.86);
   box-shadow: 0 0 26px rgba(3, 8, 19, 0.9);
+  backdrop-filter: blur(8px);
 }
 
 .nitro-core-metrics > div {
@@ -499,7 +677,7 @@
   grid-row: span 2;
   width: 0.9rem;
   height: 0.9rem;
-  color: var(--console-cyan);
+  color: var(--core-accent);
 }
 
 .nitro-core-metrics span {
@@ -525,13 +703,14 @@
   font-size: 0.56rem;
 }
 
-.nitro-core-confirmed .nitro-core-metrics svg,
-.nitro-core-confirmed .nitro-core-title span {
-  color: var(--console-green);
+.nitro-core-strong_indication {
+  --core-accent: var(--console-amber);
+  --core-secondary: var(--console-magenta);
 }
 
-.nitro-core-strong_indication .nitro-core-metrics svg {
-  color: var(--console-amber);
+.nitro-core-confirmed {
+  --core-accent: var(--console-green);
+  --core-secondary: var(--console-cyan);
 }
 
 .scan-result-panel {
@@ -972,12 +1151,14 @@
 }
 
 @keyframes nitroWaveShift {
-  to { transform: translateX(-720px); }
+  to { transform: translate3d(-50%, 0, 0); }
 }
 
 @keyframes nitroScopeCursor {
-  0%, 100% { transform: translateX(-310px); opacity: 0.18; }
-  50% { transform: translateX(180px); opacity: 0.62; }
+  0% { transform: translate3d(-8%, 0, 0); opacity: 0; }
+  10% { opacity: 0.45; }
+  86% { opacity: 0.45; }
+  100% { transform: translate3d(108%, 0, 0); opacity: 0; }
 }
 
 @keyframes nitroCoreSpin {
@@ -987,6 +1168,29 @@
 @keyframes nitroCoreBreath {
   0%, 100% { opacity: 0.58; transform: scale(0.96); }
   50% { opacity: 1; transform: scale(1.04); }
+}
+
+@keyframes nitroCorePulse {
+  0%, 100% { opacity: 0.56; transform: scale(0.94); }
+  50% { opacity: 0.86; transform: scale(1.03); }
+}
+
+@keyframes nitroCoreTraceFlow {
+  to { stroke-dashoffset: -232; }
+}
+
+@keyframes nitroCoreNodePulse {
+  0%, 100% { opacity: 0.48; transform: scale(0.88); }
+  50% { opacity: 1; transform: scale(1.08); }
+}
+
+@keyframes nitroCoreDiePulse {
+  0%, 100% { opacity: 0.76; transform: scale(0.96); }
+  50% { opacity: 0.96; transform: scale(1.04); }
+}
+
+@keyframes nitroCoreSignal {
+  to { stroke-dashoffset: -96; }
 }
 
 @media (min-width: 1121px) {
@@ -1005,18 +1209,13 @@
 
   .console-core-panel {
     inset: 50% 0 auto;
-    width: min(430px, 58%);
-    height: 236px;
+    width: min(450px, 60%);
+    height: 240px;
     transform: translateY(-50%);
   }
 
   .nitro-core-visual {
-    width: 154px;
-  }
-
-  .nitro-core-visual img {
-    width: 128px;
-    height: 128px;
+    width: 174px;
   }
 
   .scan-control-panel {
@@ -1130,12 +1329,7 @@
   }
 
   .nitro-core-visual {
-    width: 184px;
-  }
-
-  .nitro-core-visual img {
-    width: 152px;
-    height: 152px;
+    width: 210px;
   }
 
   .nitro-core-metrics {
@@ -1255,11 +1449,16 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .scope-wave-track,
+  .scope-wave-layer,
   .scope-cursor,
   .nitro-core-visual::before,
   .nitro-core-visual::after,
-  .nitro-core-orbit {
+  .nitro-core-halo,
+  .nitro-core-orbit,
+  .nitro-core-trace,
+  .nitro-core-node,
+  .nitro-core-die,
+  .nitro-core-signal {
     animation: none;
   }
 }

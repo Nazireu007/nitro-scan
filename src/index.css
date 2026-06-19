@@ -1948,7 +1948,8 @@ button {
 }
 
 .manual-form-grid input,
-.manual-form-grid select {
+.manual-form-grid select,
+.nitro-select-trigger {
   width: 100%;
   min-width: 0;
   border: 1px solid rgba(34, 211, 238, 0.18);
@@ -1975,11 +1976,114 @@ button {
 }
 
 .manual-form-grid input:focus,
-.manual-form-grid select:focus {
+.manual-form-grid select:focus,
+.nitro-select-trigger:focus-visible,
+.nitro-select-open .nitro-select-trigger {
   border-color: rgba(34, 211, 238, 0.52);
   box-shadow:
     0 0 0 1px rgba(34, 211, 238, 0.16),
     inset 0 0 14px rgba(34, 211, 238, 0.08);
+}
+
+.nitro-select {
+  position: relative;
+  min-width: 0;
+}
+
+.nitro-select-trigger {
+  display: inline-flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.65rem;
+  text-align: left;
+  cursor: pointer;
+}
+
+.nitro-select-trigger:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+.nitro-select-value {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.nitro-select-chevron {
+  flex: 0 0 auto;
+  color: #22d3ee;
+  filter: drop-shadow(0 0 5px rgba(34, 211, 238, 0.45));
+  transition: transform 160ms ease;
+}
+
+.nitro-select-open .nitro-select-chevron {
+  transform: rotate(180deg);
+}
+
+.nitro-select-menu {
+  position: fixed;
+  z-index: 78;
+  display: grid;
+  gap: 0.18rem;
+  overflow-x: hidden;
+  overflow-y: auto;
+  border: 1px solid rgba(34, 211, 238, 0.36);
+  border-radius: 8px;
+  padding: 0.28rem;
+  background:
+    linear-gradient(180deg, rgba(6, 18, 40, 0.98), rgba(2, 6, 23, 0.98)),
+    #020617;
+  box-shadow:
+    0 18px 42px rgba(0, 0, 0, 0.56),
+    0 0 24px rgba(34, 211, 238, 0.18),
+    inset 0 0 20px rgba(34, 211, 238, 0.06);
+  backdrop-filter: blur(14px);
+  scrollbar-color: rgba(34, 211, 238, 0.86) rgba(2, 6, 23, 0.72);
+  scrollbar-width: thin;
+}
+
+.nitro-select-menu::-webkit-scrollbar {
+  width: 6px;
+}
+
+.nitro-select-menu::-webkit-scrollbar-track {
+  border-radius: 999px;
+  background: rgba(2, 6, 23, 0.72);
+}
+
+.nitro-select-menu::-webkit-scrollbar-thumb {
+  border: 1px solid rgba(2, 6, 23, 0.72);
+  border-radius: 999px;
+  background: linear-gradient(180deg, #22d3ee, #38bdf8, #6366f1);
+}
+
+.nitro-select-option {
+  display: flex;
+  align-items: center;
+  min-height: 2.35rem;
+  border: 0;
+  border-radius: 6px;
+  padding: 0.48rem 0.62rem;
+  color: #cfe8f5;
+  background: transparent;
+  cursor: pointer;
+  font-size: 0.74rem;
+  font-weight: 850;
+  text-align: left;
+}
+
+.nitro-select-option:hover,
+.nitro-select-option-active {
+  color: #ecfeff;
+  background: rgba(34, 211, 238, 0.12);
+  box-shadow: inset 0 0 14px rgba(34, 211, 238, 0.07);
+}
+
+.nitro-select-option-selected {
+  color: #67e8f9;
+  background: rgba(14, 116, 144, 0.18);
 }
 
 .manual-action-row,
@@ -2647,6 +2751,16 @@ button {
 
   .manual-measurement-list {
     max-height: 16rem;
+  }
+
+  .nitro-select-menu {
+    max-width: calc(100vw - 1rem);
+  }
+
+  .nitro-select-option {
+    min-height: 2.75rem;
+    padding: 0.62rem 0.68rem;
+    font-size: 0.78rem;
   }
 
   .manual-measurement-list article {

@@ -9,6 +9,7 @@ import type {
   MeasurementTestOrigin,
   MeasurementType,
 } from '../types/measurements';
+import { NitroSelect } from './NitroSelect';
 
 type ManualMeasurementPanelProps = {
   isOpen: boolean;
@@ -113,6 +114,7 @@ const unitByType: Record<MeasurementType, string> = {
 };
 
 const unitOptions = ['V', 'A', 'Ω', '°C', 'lógico', 'estado'];
+const unitSelectOptions = unitOptions.map((unit) => ({ value: unit, label: unit }));
 
 const initialForm: MeasurementForm = {
   label: '',
@@ -626,13 +628,12 @@ export function ManualMeasurementPanel({ isOpen, onClose, onAnalyze }: ManualMea
 
               <label>
                 <span>Tipo</span>
-                <select value={form.type} onChange={(event) => updateForm('type', event.target.value as MeasurementType)}>
-                  {typeOptions.map((type) => (
-                    <option key={type.value} value={type.value}>
-                      {type.label}
-                    </option>
-                  ))}
-                </select>
+                <NitroSelect
+                  ariaLabel="Tipo"
+                  value={form.type}
+                  options={typeOptions}
+                  onChange={(value) => updateForm('type', value)}
+                />
               </label>
 
               <label>
@@ -646,13 +647,12 @@ export function ManualMeasurementPanel({ isOpen, onClose, onAnalyze }: ManualMea
 
               <label>
                 <span>Unidade</span>
-                <select value={form.unit} onChange={(event) => updateForm('unit', event.target.value)}>
-                  {unitOptions.map((unit) => (
-                    <option key={unit} value={unit}>
-                      {unit}
-                    </option>
-                  ))}
-                </select>
+                <NitroSelect
+                  ariaLabel="Unidade"
+                  value={form.unit}
+                  options={unitSelectOptions}
+                  onChange={(value) => updateForm('unit', value)}
+                />
               </label>
 
               <label>
@@ -691,35 +691,32 @@ export function ManualMeasurementPanel({ isOpen, onClose, onAnalyze }: ManualMea
             <div className="manual-form-grid">
               <label>
                 <span>Modo de teste</span>
-                <select value={form.testMode} onChange={(event) => updateForm('testMode', event.target.value as MeasurementTestMode)}>
-                  {testModeOptions.map((mode) => (
-                    <option key={mode.value} value={mode.value}>
-                      {mode.label}
-                    </option>
-                  ))}
-                </select>
+                <NitroSelect
+                  ariaLabel="Modo de teste"
+                  value={form.testMode}
+                  options={testModeOptions}
+                  onChange={(value) => updateForm('testMode', value)}
+                />
               </label>
 
               <label>
                 <span>Origem do teste</span>
-                <select value={form.testOrigin} onChange={(event) => updateForm('testOrigin', event.target.value as MeasurementTestOrigin)}>
-                  {testOriginOptions.map((origin) => (
-                    <option key={origin.value} value={origin.value}>
-                      {origin.label}
-                    </option>
-                  ))}
-                </select>
+                <NitroSelect
+                  ariaLabel="Origem do teste"
+                  value={form.testOrigin}
+                  options={testOriginOptions}
+                  onChange={(value) => updateForm('testOrigin', value)}
+                />
               </label>
 
               <label className="manual-form-wide">
                 <span>Estado de confirmação</span>
-                <select value={form.confirmationState} onChange={(event) => updateForm('confirmationState', event.target.value as ConfirmationState | '')}>
-                  {confirmationOptions.map((confirmation) => (
-                    <option key={confirmation.value || 'none'} value={confirmation.value}>
-                      {confirmation.label}
-                    </option>
-                  ))}
-                </select>
+                <NitroSelect
+                  ariaLabel="Estado de confirmação"
+                  value={form.confirmationState}
+                  options={confirmationOptions}
+                  onChange={(value) => updateForm('confirmationState', value)}
+                />
               </label>
             </div>
           </section>

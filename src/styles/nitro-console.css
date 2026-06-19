@@ -1,0 +1,1265 @@
+.nitro-console-app,
+.nitro-console-app * {
+  letter-spacing: 0;
+}
+
+.nitro-console-app {
+  --console-bg: #050814;
+  --console-surface: #07111f;
+  --console-surface-deep: #030813;
+  --console-line: rgba(34, 223, 255, 0.18);
+  --console-line-strong: rgba(34, 223, 255, 0.42);
+  --console-cyan: #22dfff;
+  --console-violet: #8b2cff;
+  --console-magenta: #ff2bd6;
+  --console-green: #74f7b0;
+  --console-amber: #f5bd52;
+  --console-red: #ff667d;
+  position: relative;
+  min-width: 320px;
+  min-height: 100svh;
+  overflow-x: hidden;
+  color: #edf8ff;
+  background:
+    linear-gradient(135deg, rgba(139, 44, 255, 0.08), transparent 32%),
+    linear-gradient(315deg, rgba(34, 223, 255, 0.07), transparent 38%),
+    var(--console-bg);
+}
+
+.nitro-console-grid {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  opacity: 0.42;
+  background-image:
+    linear-gradient(rgba(34, 223, 255, 0.055) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(139, 44, 255, 0.045) 1px, transparent 1px),
+    linear-gradient(135deg, transparent 49.7%, rgba(34, 223, 255, 0.035) 50%, transparent 50.3%);
+  background-size: 48px 48px, 48px 48px, 240px 240px;
+}
+
+.nitro-console-shell {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  width: min(100%, 1540px);
+  min-height: 100svh;
+  grid-template-rows: auto minmax(0, 1fr) auto;
+  gap: 10px;
+  margin: 0 auto;
+  padding: 10px;
+}
+
+.nitro-topbar {
+  display: flex;
+  min-height: 58px;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  border: 1px solid var(--console-line);
+  border-radius: 6px;
+  padding: 0.62rem 0.78rem;
+  background: rgba(3, 8, 19, 0.9);
+  box-shadow: inset 0 -1px 0 rgba(139, 44, 255, 0.12);
+}
+
+.nitro-brand-lockup,
+.nitro-topbar-actions,
+.nitro-online-state,
+.nitro-button,
+.wave-scope-header > div,
+.wave-scope-footer,
+.wave-scope-footer span,
+.console-panel-heading,
+.scan-safety-state,
+.console-strip-heading,
+.console-strip-heading > div,
+.scan-result-state {
+  display: flex;
+  align-items: center;
+}
+
+.nitro-brand-lockup {
+  min-width: 0;
+  gap: 0.72rem;
+}
+
+.nitro-brand-mark {
+  display: grid;
+  width: 2.3rem;
+  height: 2.3rem;
+  flex: 0 0 auto;
+  place-items: center;
+  border: 1px solid rgba(34, 223, 255, 0.4);
+  border-radius: 6px;
+  color: var(--console-cyan);
+  background: rgba(34, 223, 255, 0.07);
+  box-shadow: 0 0 18px rgba(34, 223, 255, 0.12);
+}
+
+.nitro-brand-mark svg {
+  width: 1.2rem;
+  height: 1.2rem;
+}
+
+.nitro-brand-lockup > div {
+  display: grid;
+  min-width: 0;
+  gap: 0.08rem;
+}
+
+.nitro-brand-lockup strong {
+  overflow: hidden;
+  color: #ffffff;
+  font-size: 1rem;
+  font-weight: 950;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.nitro-brand-lockup span:last-child {
+  overflow: hidden;
+  color: #8fb0c8;
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.nitro-topbar-actions {
+  flex: 0 0 auto;
+  gap: 0.62rem;
+}
+
+.nitro-online-state {
+  gap: 0.38rem;
+  color: var(--console-green);
+  font-size: 0.68rem;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.nitro-online-state svg,
+.scan-safety-state svg {
+  width: 0.95rem;
+  height: 0.95rem;
+}
+
+.nitro-button {
+  min-height: 2.45rem;
+  justify-content: center;
+  gap: 0.48rem;
+  border: 1px solid var(--console-line);
+  border-radius: 6px;
+  padding: 0.56rem 0.72rem;
+  color: #d9effb;
+  background: #071626;
+  cursor: pointer;
+  font-size: 0.7rem;
+  font-weight: 900;
+  transition: border-color 160ms ease, background-color 160ms ease, color 160ms ease, box-shadow 160ms ease;
+}
+
+.nitro-button svg {
+  width: 1rem;
+  height: 1rem;
+  flex: 0 0 auto;
+}
+
+.nitro-button:hover:not(:disabled),
+.nitro-button:focus-visible {
+  border-color: rgba(34, 223, 255, 0.62);
+  color: #ffffff;
+  background: #0a2135;
+  box-shadow: 0 0 18px rgba(34, 223, 255, 0.12);
+  outline: none;
+}
+
+.nitro-button:disabled {
+  cursor: not-allowed;
+  opacity: 0.42;
+}
+
+.nitro-button-primary {
+  border-color: rgba(34, 223, 255, 0.58);
+  color: #ffffff;
+  background: linear-gradient(90deg, #07546d, #17346c 62%, #3d2278);
+  box-shadow: 0 0 22px rgba(34, 223, 255, 0.13), inset 0 0 18px rgba(255, 43, 214, 0.07);
+}
+
+.nitro-button-quiet {
+  background: rgba(7, 17, 31, 0.9);
+}
+
+.nitro-console-main {
+  display: grid;
+  min-height: 0;
+  grid-template-columns: minmax(0, 1fr) minmax(318px, 350px);
+  gap: 10px;
+}
+
+.nitro-console-stage,
+.scan-control-panel,
+.console-strip {
+  min-width: 0;
+  border: 1px solid var(--console-line);
+  border-radius: 6px;
+  background: rgba(3, 8, 19, 0.92);
+  box-shadow: inset 0 0 32px rgba(34, 223, 255, 0.025);
+}
+
+.nitro-console-stage {
+  display: grid;
+  min-height: 500px;
+  grid-template-rows: minmax(310px, 1fr) auto;
+  overflow: hidden;
+}
+
+.nitro-signal-stage {
+  position: relative;
+  min-height: 310px;
+  overflow: hidden;
+  background:
+    linear-gradient(90deg, rgba(34, 223, 255, 0.025), transparent 26%, transparent 74%, rgba(255, 43, 214, 0.025)),
+    #030813;
+}
+
+.wave-scope {
+  --scope-primary: var(--console-cyan);
+  --scope-return: var(--console-magenta);
+  position: absolute;
+  inset: 0;
+  display: grid;
+  min-width: 0;
+  grid-template-rows: auto minmax(0, 1fr) auto;
+  padding: 0.7rem 0.8rem 0.62rem;
+}
+
+.wave-scope-strong_indication {
+  --scope-primary: var(--console-amber);
+  --scope-return: var(--console-magenta);
+}
+
+.wave-scope-confirmed {
+  --scope-primary: var(--console-green);
+  --scope-return: var(--console-cyan);
+}
+
+.wave-scope-header {
+  display: flex;
+  position: relative;
+  z-index: 2;
+  min-width: 0;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.wave-scope-header > div {
+  min-width: 0;
+  gap: 0.4rem;
+  color: #76dced;
+}
+
+.wave-scope-header svg {
+  width: 0.95rem;
+  height: 0.95rem;
+}
+
+.wave-scope-header span,
+.wave-scope-header strong,
+.wave-scope-footer {
+  font-size: 0.62rem;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.wave-scope-header strong {
+  overflow: hidden;
+  color: #8da9bf;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.wave-scope-grid {
+  position: relative;
+  min-height: 0;
+  overflow: hidden;
+  background-image:
+    linear-gradient(rgba(34, 223, 255, 0.075) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(34, 223, 255, 0.075) 1px, transparent 1px),
+    linear-gradient(rgba(139, 44, 255, 0.035) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(139, 44, 255, 0.035) 1px, transparent 1px);
+  background-size: 48px 48px, 48px 48px, 12px 12px, 12px 12px;
+  mask-image: linear-gradient(90deg, transparent, black 8%, black 92%, transparent);
+}
+
+.wave-scope-grid svg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+
+.scope-baseline {
+  stroke: rgba(255, 255, 255, 0.08);
+  stroke-width: 1;
+  stroke-dasharray: 4 8;
+}
+
+.scope-wave-track {
+  animation: nitroWaveShift 8s linear infinite;
+}
+
+.scope-wave-track path {
+  fill: none;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  vector-effect: non-scaling-stroke;
+}
+
+.scope-wave-primary path {
+  stroke: var(--scope-primary);
+  stroke-width: 2.2;
+  opacity: 0.74;
+}
+
+.scope-wave-return {
+  animation-duration: 11s;
+}
+
+.scope-wave-return path {
+  stroke: var(--scope-return);
+  stroke-width: 1.5;
+  stroke-dasharray: 6 5;
+  opacity: 0.48;
+}
+
+.scope-cursor {
+  stroke: rgba(255, 255, 255, 0.28);
+  stroke-width: 1;
+  stroke-dasharray: 3 5;
+  animation: nitroScopeCursor 4.5s ease-in-out infinite;
+}
+
+.wave-scope-footer {
+  position: relative;
+  z-index: 2;
+  justify-content: flex-start;
+  gap: 0.9rem;
+  color: #708da2;
+}
+
+.wave-scope-footer span {
+  gap: 0.3rem;
+}
+
+.wave-scope-footer b {
+  margin-left: auto;
+  color: #a6bfd0;
+}
+
+.scope-key {
+  display: block;
+  width: 1.1rem;
+  height: 2px;
+  background: currentColor;
+  box-shadow: 0 0 7px currentColor;
+}
+
+.scope-key-primary {
+  color: var(--scope-primary);
+}
+
+.scope-key-return {
+  color: var(--scope-return);
+}
+
+.console-core-panel {
+  position: absolute;
+  inset: 2.35rem 0 1.8rem;
+  z-index: 3;
+  display: grid;
+  width: min(430px, 58%);
+  grid-template-rows: minmax(0, 1fr) auto;
+  place-items: center;
+  margin: auto;
+  pointer-events: none;
+}
+
+.nitro-core-visual {
+  position: relative;
+  display: grid;
+  width: 196px;
+  aspect-ratio: 1;
+  place-items: center;
+}
+
+.nitro-core-visual::before,
+.nitro-core-visual::after {
+  position: absolute;
+  content: '';
+  pointer-events: none;
+}
+
+.nitro-core-visual::before {
+  inset: 24%;
+  border: 1px solid rgba(34, 223, 255, 0.42);
+  border-radius: 50%;
+  box-shadow: 0 0 34px rgba(34, 223, 255, 0.34), inset 0 0 24px rgba(139, 44, 255, 0.2);
+  animation: nitroCoreBreath 3.6s ease-in-out infinite;
+}
+
+.nitro-core-visual::after {
+  inset: 5%;
+  border: 1px dashed rgba(255, 43, 214, 0.24);
+  border-radius: 50%;
+  animation: nitroCoreSpin 18s linear infinite;
+}
+
+.nitro-core-visual img {
+  width: 164px;
+  height: 164px;
+  object-fit: contain;
+  opacity: 0.88;
+  filter: saturate(1.14) contrast(1.08) drop-shadow(0 0 18px rgba(34, 223, 255, 0.34));
+}
+
+.nitro-core-orbit {
+  position: absolute;
+  border: 1px solid rgba(34, 223, 255, 0.18);
+  border-radius: 50%;
+}
+
+.nitro-core-orbit-a {
+  inset: 0;
+  animation: nitroCoreSpin 14s linear infinite reverse;
+}
+
+.nitro-core-orbit-b {
+  inset: 14%;
+  border-color: rgba(139, 44, 255, 0.24);
+  animation: nitroCoreSpin 9s linear infinite;
+}
+
+.nitro-core-title {
+  position: absolute;
+  display: grid;
+  place-items: center;
+  text-align: center;
+  text-shadow: 0 0 12px rgba(34, 223, 255, 0.62);
+}
+
+.nitro-core-title span,
+.nitro-core-title small {
+  color: #83d9e8;
+  font-size: 0.56rem;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.nitro-core-title strong {
+  color: #ffffff;
+  font-size: 1.18rem;
+  font-weight: 950;
+}
+
+.nitro-core-title small {
+  margin-top: 0.18rem;
+  color: #9e77e8;
+  font-size: 0.48rem;
+}
+
+.nitro-core-metrics {
+  display: grid;
+  width: 100%;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  border: 1px solid rgba(34, 223, 255, 0.16);
+  border-radius: 6px;
+  background: rgba(3, 8, 19, 0.86);
+  box-shadow: 0 0 26px rgba(3, 8, 19, 0.9);
+}
+
+.nitro-core-metrics > div {
+  display: grid;
+  min-width: 0;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 0.02rem 0.32rem;
+  align-items: center;
+  padding: 0.48rem 0.5rem;
+  border-right: 1px solid rgba(34, 223, 255, 0.1);
+}
+
+.nitro-core-metrics > div:last-child {
+  border-right: 0;
+}
+
+.nitro-core-metrics svg {
+  grid-row: span 2;
+  width: 0.9rem;
+  height: 0.9rem;
+  color: var(--console-cyan);
+}
+
+.nitro-core-metrics span {
+  overflow: hidden;
+  color: #7896ab;
+  font-size: 0.5rem;
+  font-weight: 850;
+  text-overflow: ellipsis;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.nitro-core-metrics strong {
+  overflow: hidden;
+  color: #f4fbff;
+  font-size: 0.68rem;
+  font-weight: 950;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.nitro-core-metrics > div:last-child strong {
+  font-size: 0.56rem;
+}
+
+.nitro-core-confirmed .nitro-core-metrics svg,
+.nitro-core-confirmed .nitro-core-title span {
+  color: var(--console-green);
+}
+
+.nitro-core-strong_indication .nitro-core-metrics svg {
+  color: var(--console-amber);
+}
+
+.scan-result-panel {
+  --result-accent: var(--console-cyan);
+  display: grid;
+  min-width: 0;
+  grid-template-columns: minmax(0, 1.1fr) minmax(240px, 0.9fr);
+  gap: 0.35rem 1.3rem;
+  border-top: 1px solid var(--console-line);
+  padding: 0.78rem 0.9rem 0.86rem;
+  background: rgba(4, 11, 24, 0.94);
+}
+
+.scan-result-strong_indication {
+  --result-accent: var(--console-amber);
+}
+
+.scan-result-confirmed {
+  --result-accent: var(--console-green);
+}
+
+.scan-result-panel > header {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: 0.62rem;
+}
+
+.scan-result-state {
+  flex: 0 0 auto;
+  gap: 0.34rem;
+  color: var(--result-accent);
+  font-size: 0.6rem;
+  font-weight: 950;
+}
+
+.scan-result-state svg {
+  width: 0.92rem;
+  height: 0.92rem;
+}
+
+.scan-result-case {
+  overflow: hidden;
+  color: #708ea3;
+  font-size: 0.58rem;
+  font-weight: 800;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.scan-result-panel h2 {
+  grid-column: 1;
+  min-width: 0;
+  margin: 0;
+  color: #ffffff;
+  font-size: 1.28rem;
+  font-weight: 950;
+  line-height: 1.14;
+  overflow-wrap: anywhere;
+  text-shadow: 0 0 14px color-mix(in srgb, var(--result-accent) 38%, transparent);
+}
+
+.scan-result-panel > p {
+  grid-column: 1;
+  margin: 0.12rem 0 0;
+  color: #a7bfd0;
+  font-size: 0.72rem;
+  font-weight: 650;
+  line-height: 1.42;
+}
+
+.scan-hypothesis-list {
+  display: grid;
+  grid-column: 2;
+  grid-row: 1 / span 3;
+  align-content: center;
+  gap: 0.48rem;
+  border-left: 1px solid rgba(34, 223, 255, 0.12);
+  padding-left: 1rem;
+}
+
+.scan-hypothesis-list > div {
+  display: grid;
+  min-width: 0;
+  grid-template-columns: minmax(0, 1fr) 4.4rem auto;
+  gap: 0.48rem;
+  align-items: center;
+}
+
+.scan-hypothesis-list span {
+  overflow: hidden;
+  color: #b9d0de;
+  font-size: 0.62rem;
+  font-weight: 800;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.scan-hypothesis-list i {
+  display: block;
+  height: 3px;
+  overflow: hidden;
+  background: rgba(148, 163, 184, 0.12);
+}
+
+.scan-hypothesis-list i b {
+  display: block;
+  height: 100%;
+  background: linear-gradient(90deg, var(--console-cyan), var(--console-violet), var(--console-magenta));
+  box-shadow: 0 0 8px rgba(34, 223, 255, 0.46);
+}
+
+.scan-hypothesis-list strong {
+  color: #e8f8ff;
+  font-size: 0.62rem;
+  font-weight: 950;
+}
+
+.scan-control-panel {
+  display: grid;
+  align-content: start;
+  padding: 0.84rem;
+}
+
+.console-panel-heading {
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin-bottom: 0.78rem;
+  padding-bottom: 0.7rem;
+  border-bottom: 1px solid rgba(34, 223, 255, 0.12);
+}
+
+.console-panel-heading > div {
+  display: grid;
+  gap: 0.12rem;
+}
+
+.console-panel-heading span,
+.scan-control-form label > span {
+  color: #78a1b9;
+  font-size: 0.58rem;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.console-panel-heading h2 {
+  margin: 0;
+  color: #f2fbff;
+  font-size: 1rem;
+  font-weight: 950;
+}
+
+.scan-safety-state {
+  gap: 0.32rem;
+  color: var(--console-green) !important;
+  white-space: nowrap;
+}
+
+.scan-control-form {
+  display: grid;
+  min-width: 0;
+  gap: 0.64rem;
+}
+
+.scan-control-form label {
+  display: grid;
+  min-width: 0;
+  gap: 0.3rem;
+}
+
+.scan-control-form input,
+.nitro-console-app .nitro-select-trigger {
+  width: 100%;
+  min-width: 0;
+  min-height: 2.55rem;
+  border: 1px solid rgba(34, 223, 255, 0.2);
+  border-radius: 6px;
+  padding: 0.62rem 0.66rem;
+  color: #e8f8ff;
+  background: #06111f;
+  box-shadow: inset 0 0 14px rgba(34, 223, 255, 0.025);
+  font-size: 0.72rem;
+  outline: none;
+}
+
+.scan-control-form input::placeholder {
+  color: #526c80;
+}
+
+.scan-control-form input:focus,
+.nitro-console-app .nitro-select-trigger:focus-visible,
+.nitro-console-app .nitro-select-open .nitro-select-trigger {
+  border-color: rgba(34, 223, 255, 0.62);
+  box-shadow: 0 0 0 1px rgba(34, 223, 255, 0.12), inset 0 0 18px rgba(34, 223, 255, 0.06);
+}
+
+.nitro-console-app .nitro-select-chevron {
+  color: var(--console-cyan);
+}
+
+.scan-response-row {
+  display: grid;
+  min-width: 0;
+  grid-template-columns: minmax(0, 1fr) 5.6rem;
+  gap: 0.58rem;
+}
+
+.scan-unit-field {
+  min-width: 0;
+}
+
+.scan-analyze-button {
+  width: 100%;
+  min-height: 2.75rem;
+  margin-top: 0.18rem;
+}
+
+.scan-secondary-actions {
+  display: grid;
+  grid-template-columns: 0.82fr 1.18fr;
+  gap: 0.52rem;
+}
+
+.nitro-select-menu {
+  z-index: 120;
+  gap: 0.12rem;
+  border-color: rgba(34, 223, 255, 0.42);
+  border-radius: 6px;
+  background: #030a17;
+  box-shadow: 0 18px 42px rgba(0, 0, 0, 0.66), 0 0 22px rgba(34, 223, 255, 0.14);
+}
+
+.nitro-select-option {
+  border-radius: 4px;
+  color: #c8dce8;
+  background: #030a17;
+}
+
+.nitro-select-option:hover,
+.nitro-select-option-active {
+  color: #ffffff;
+  background: #0a2638;
+}
+
+.nitro-select-option-selected {
+  color: var(--console-cyan);
+  background: #082033;
+}
+
+.nitro-console-strips {
+  display: grid;
+  min-height: 182px;
+  grid-template-columns: 1.08fr 0.92fr 1fr;
+  gap: 10px;
+}
+
+.console-strip {
+  display: grid;
+  min-height: 0;
+  grid-template-rows: auto minmax(0, 1fr);
+  overflow: hidden;
+}
+
+.console-strip-heading {
+  min-height: 2.55rem;
+  justify-content: space-between;
+  gap: 0.7rem;
+  border-bottom: 1px solid rgba(34, 223, 255, 0.12);
+  padding: 0.58rem 0.68rem;
+  background: #07111f;
+}
+
+.console-strip-heading > div {
+  min-width: 0;
+  gap: 0.42rem;
+}
+
+.console-strip-heading svg {
+  width: 0.95rem;
+  height: 0.95rem;
+  flex: 0 0 auto;
+  color: var(--console-cyan);
+}
+
+.console-strip-heading h2 {
+  overflow: hidden;
+  margin: 0;
+  color: #e9f8ff;
+  font-size: 0.7rem;
+  font-weight: 950;
+  text-overflow: ellipsis;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.console-strip-heading > span {
+  color: #7797ab;
+  font-size: 0.58rem;
+  font-weight: 950;
+}
+
+.console-strip-scroll {
+  min-height: 0;
+  overflow-x: hidden;
+  overflow-y: auto;
+  padding: 0.3rem 0.5rem 0.42rem;
+  scrollbar-color: rgba(34, 223, 255, 0.8) rgba(3, 8, 19, 0.7);
+  scrollbar-gutter: stable;
+  scrollbar-width: thin;
+}
+
+.console-strip-scroll::-webkit-scrollbar,
+.nitro-select-menu::-webkit-scrollbar {
+  width: 5px;
+}
+
+.console-strip-scroll::-webkit-scrollbar-track,
+.nitro-select-menu::-webkit-scrollbar-track {
+  background: #030813;
+}
+
+.console-strip-scroll::-webkit-scrollbar-thumb,
+.nitro-select-menu::-webkit-scrollbar-thumb {
+  border-radius: 6px;
+  background: #159fba;
+}
+
+.evidence-line,
+.investigation-line,
+.live-log-line {
+  min-width: 0;
+  border-bottom: 1px solid rgba(148, 163, 184, 0.08);
+}
+
+.evidence-line {
+  display: grid;
+  grid-template-columns: 1.55rem minmax(0, 1fr);
+  gap: 0.45rem;
+  padding: 0.42rem 0.12rem;
+}
+
+.evidence-line b {
+  color: #52778e;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 0.58rem;
+}
+
+.evidence-line p,
+.investigation-line p,
+.live-log-line p,
+.console-empty-line {
+  margin: 0;
+  color: #adc4d2;
+  font-size: 0.62rem;
+  font-weight: 650;
+  line-height: 1.34;
+}
+
+.evidence-critical b,
+.evidence-warning b {
+  color: var(--console-amber);
+}
+
+.evidence-success b {
+  color: var(--console-green);
+}
+
+.investigation-line {
+  display: grid;
+  grid-template-columns: 5.6rem minmax(0, 1fr);
+  gap: 0.52rem;
+  align-items: center;
+  padding: 0.4rem 0.12rem;
+}
+
+.investigation-state {
+  display: inline-flex;
+  min-width: 0;
+  justify-content: center;
+  border: 1px solid rgba(34, 223, 255, 0.18);
+  border-radius: 4px;
+  padding: 0.22rem 0.28rem;
+  color: #80a4b8;
+  background: rgba(6, 17, 31, 0.76);
+  font-size: 0.48rem;
+  font-weight: 950;
+  white-space: nowrap;
+}
+
+.investigation-state-active {
+  border-color: rgba(34, 223, 255, 0.4);
+  color: var(--console-cyan);
+}
+
+.investigation-state-bench {
+  border-color: rgba(245, 189, 82, 0.38);
+  color: var(--console-amber);
+}
+
+.live-log-line {
+  display: grid;
+  grid-template-columns: 3.7rem 2.8rem minmax(0, 1fr) 3.1rem;
+  gap: 0.38rem;
+  align-items: center;
+  padding: 0.38rem 0.1rem;
+}
+
+.live-log-line time,
+.live-log-line b,
+.live-log-line > span {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 0.51rem;
+  font-weight: 850;
+}
+
+.live-log-line time {
+  color: #638297;
+}
+
+.live-log-line b {
+  overflow: hidden;
+  color: #9b72ee;
+  text-overflow: ellipsis;
+}
+
+.live-log-line > span {
+  color: var(--console-green);
+  text-align: right;
+}
+
+.live-log-alerta > span {
+  color: var(--console-amber);
+}
+
+.console-empty-line {
+  padding: 0.65rem 0.15rem;
+  color: #607c90;
+}
+
+@keyframes nitroWaveShift {
+  to { transform: translateX(-720px); }
+}
+
+@keyframes nitroScopeCursor {
+  0%, 100% { transform: translateX(-310px); opacity: 0.18; }
+  50% { transform: translateX(180px); opacity: 0.62; }
+}
+
+@keyframes nitroCoreSpin {
+  to { transform: rotate(360deg); }
+}
+
+@keyframes nitroCoreBreath {
+  0%, 100% { opacity: 0.58; transform: scale(0.96); }
+  50% { opacity: 1; transform: scale(1.04); }
+}
+
+@media (min-width: 1121px) {
+  .nitro-console-shell {
+    height: 100svh;
+  }
+
+  .nitro-console-stage {
+    min-height: 0;
+    grid-template-rows: minmax(280px, 1fr) auto;
+  }
+
+  .nitro-signal-stage {
+    min-height: 280px;
+  }
+
+  .console-core-panel {
+    inset: 50% 0 auto;
+    width: min(430px, 58%);
+    height: 236px;
+    transform: translateY(-50%);
+  }
+
+  .nitro-core-visual {
+    width: 154px;
+  }
+
+  .nitro-core-visual img {
+    width: 128px;
+    height: 128px;
+  }
+
+  .scan-control-panel {
+    overflow-y: auto;
+    padding: 0.7rem;
+    scrollbar-color: rgba(34, 223, 255, 0.8) rgba(3, 8, 19, 0.7);
+    scrollbar-width: thin;
+  }
+
+  .console-panel-heading {
+    margin-bottom: 0.58rem;
+    padding-bottom: 0.52rem;
+  }
+
+  .scan-control-form {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.48rem;
+  }
+
+  .scan-control-form > label:nth-child(3),
+  .scan-control-form > label:nth-child(5),
+  .scan-response-row,
+  .scan-analyze-button,
+  .scan-secondary-actions {
+    grid-column: 1 / -1;
+  }
+
+  .scan-control-form input,
+  .nitro-console-app .nitro-select-trigger {
+    min-height: 2.3rem;
+    padding: 0.52rem 0.62rem;
+  }
+
+  .scan-analyze-button {
+    min-height: 2.5rem;
+  }
+
+  .nitro-console-strips {
+    height: 158px;
+    min-height: 0;
+  }
+}
+
+@media (max-width: 1120px) {
+  .nitro-console-shell {
+    grid-template-rows: auto auto auto;
+  }
+
+  .nitro-console-main {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .scan-control-form {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .scan-response-row,
+  .scan-analyze-button,
+  .scan-secondary-actions {
+    grid-column: 1 / -1;
+  }
+
+  .nitro-console-strips {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .live-log-strip {
+    grid-column: 1 / -1;
+  }
+}
+
+@media (max-width: 760px) {
+  .nitro-console-shell {
+    gap: 8px;
+    padding: 8px;
+  }
+
+  .nitro-topbar {
+    align-items: flex-start;
+  }
+
+  .nitro-topbar-actions {
+    flex-direction: column;
+    align-items: flex-end;
+  }
+
+  .nitro-console-stage {
+    grid-template-rows: auto auto;
+  }
+
+  .nitro-signal-stage {
+    display: flex;
+    min-height: 0;
+    flex-direction: column;
+  }
+
+  .console-core-panel {
+    position: relative;
+    inset: auto;
+    order: 0;
+    width: 100%;
+    min-height: 290px;
+    padding: 0.7rem 0.65rem 0;
+  }
+
+  .wave-scope {
+    position: relative;
+    order: 1;
+    min-height: 250px;
+    padding-top: 0.8rem;
+  }
+
+  .nitro-core-visual {
+    width: 184px;
+  }
+
+  .nitro-core-visual img {
+    width: 152px;
+    height: 152px;
+  }
+
+  .nitro-core-metrics {
+    width: min(100%, 520px);
+  }
+
+  .scan-result-panel {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 0.42rem;
+  }
+
+  .scan-result-panel h2,
+  .scan-result-panel > p,
+  .scan-hypothesis-list {
+    grid-column: 1;
+  }
+
+  .scan-hypothesis-list {
+    grid-row: auto;
+    margin-top: 0.32rem;
+    border-top: 1px solid rgba(34, 223, 255, 0.12);
+    border-left: 0;
+    padding-top: 0.62rem;
+    padding-left: 0;
+  }
+
+  .scan-control-form {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .scan-response-row,
+  .scan-analyze-button,
+  .scan-secondary-actions {
+    grid-column: 1;
+  }
+
+  .nitro-console-strips {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .live-log-strip {
+    grid-column: 1;
+  }
+
+  .console-strip {
+    min-height: 190px;
+  }
+}
+
+@media (max-width: 480px) {
+  .nitro-console-shell {
+    padding: 6px;
+  }
+
+  .nitro-topbar {
+    min-height: 66px;
+    padding: 0.55rem;
+  }
+
+  .nitro-brand-lockup span:last-child,
+  .nitro-online-state {
+    display: none;
+  }
+
+  .nitro-button {
+    min-height: 2.75rem;
+  }
+
+  .nitro-core-metrics {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .nitro-core-metrics > div:nth-child(2) {
+    border-right: 0;
+  }
+
+  .nitro-core-metrics > div:nth-child(-n + 2) {
+    border-bottom: 1px solid rgba(34, 223, 255, 0.1);
+  }
+
+  .wave-scope-footer span:nth-child(2) {
+    display: none;
+  }
+
+  .scan-result-panel {
+    padding: 0.72rem;
+  }
+
+  .scan-result-panel h2 {
+    font-size: 1.05rem;
+  }
+
+  .scan-result-panel > header {
+    flex-wrap: wrap;
+  }
+
+  .scan-response-row {
+    grid-template-columns: minmax(0, 1fr) 5rem;
+  }
+
+  .scan-secondary-actions {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .live-log-line {
+    grid-template-columns: 3.6rem 2.6rem minmax(0, 1fr);
+  }
+
+  .live-log-line > span {
+    display: none;
+  }
+
+  .nitro-select-option {
+    min-height: 2.8rem;
+    font-size: 0.78rem;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .scope-wave-track,
+  .scope-cursor,
+  .nitro-core-visual::before,
+  .nitro-core-visual::after,
+  .nitro-core-orbit {
+    animation: none;
+  }
+}

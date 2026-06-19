@@ -74,6 +74,10 @@ function searchText(measurement: NormalizedMeasurement): string {
     measurement.node,
     measurement.component,
     measurement.context,
+    measurement.testMode,
+    measurement.testOrigin,
+    measurement.readChannel,
+    measurement.confirmationState,
   ]
     .map((value) => normalizedText(value))
     .join(' ');
@@ -123,36 +127,141 @@ function testFromSignature(signatureItem: BehaviorSignature): NextTest[] {
   }));
 }
 
+const testModeLogLabels: Record<string, string> = {
+  offline_scan: 'Scan offline',
+  line_to_gnd: 'Teste linha para GND',
+  low_injection: 'Injeção baixa',
+  sine_wave: 'Onda/sinal de teste',
+  connector_response: 'Resposta por conector',
+  component_test: 'Teste de componente',
+  confirmation: 'Confirmação elétrica',
+};
+
+const confirmationLogLabels: Record<string, string> = {
+  detected: 'DETECTADO',
+  correlated: 'CORRELACIONADO',
+  strong_indication: 'FORTE INDÍCIO',
+  confirmed: 'CONFIRMADO',
+};
+
+function measurementPoint(measurement: NormalizedMeasurement): string {
+  return measurement.node ? `linha ${measurement.node}` : measurement.label;
+}
+
+function scanMetadataLogs(measurement: NormalizedMeasurement): DiagnosticLog[] {
+  const logs: DiagnosticLog[] = [];
+  const context = normalizedText(measurement.context);
+  const returnText = normalizedText(measurement.returnAmplitude);
+  const attenuation = normalizedText(measurement.attenuation);
+  const channel = measurement.readChannel || 'canal de leitura';
+
+  if (isLowResistance(measurement)) {
+    logs.push({
+      level: 'WARN',
+      message: 'Pré-scan detectou baixa impedância para GND.',
+      source: 'scanOffline',
+    });
+  }
+
+  if (measurement.injectionVoltage) {
+    logs.push({
+      level: 'TEST',
+      message: `Injeção baixa registrada: ${measurement.injectionVoltage}.`,
+      source: 'scanOffline',
+    });
+  }
+
+  if (measurement.measuredCurrent && isHighCurrent(measurement)) {
+    logs.push({
+      level: 'FAIL',
+      message: `Corrente alta registrada na injeção: ${measurement.measuredCurrent}.`,
+      source: 'scanOffline',
+    });
+  }
+
+  if (measurement.readChannel && isSignalPresent(measurement)) {
+    logs.push({
+      level: 'SCAN',
+      message: `Sinal presente no ${measurement.readChannel}.`,
+      source: 'scanOffline',
+    });
+  }
+
+  if (measurement.readChannel && isSignalAbsent(measurement)) {
+    logs.push({
+      level: 'WARN',
+      message: `Sinal ausente no ${measurement.readChannel}.`,
+      source: 'scanOffline',
+    });
+  }
+
+  if (measurement.returnAmplitude && (attenuation === 'media' || attenuation === 'média' || attenuation === 'alta' || returnText.includes('20'))) {
+    logs.push({
+      level: 'WARN',
+      message: `Retorno atenuado detectado no ${channel}.`,
+      source: 'scanOffline',
+    });
+  }
+
+  if (context.includes('caminho aberto') || measurement.rawValue === 'OL') {
+    logs.push({
+      level: 'WARN',
+      message: 'Prova elétrica indica caminho aberto.',
+      source: 'scanOffline',
+    });
+  }
+
+  if (measurement.confirmationState) {
+    logs.push({
+      level: measurement.confirmationState === 'confirmed' ? 'AI' : 'INFO',
+      message: `Estado atualizado: ${confirmationLogLabels[measurement.confirmationState]}.`,
+      source: 'scanOffline',
+    });
+  }
+
+  if (measurement.confirmationState === 'confirmed' && context.includes('normalizou')) {
+    logs.push({
+      level: 'AI',
+      message: 'Diagnóstico marcado como CONFIRMADO após normalização da linha.',
+      source: 'scanOffline',
+    });
+  }
+
+  return logs;
+}
+
 function scanLogs(measurements: NormalizedMeasurement[]): DiagnosticLog[] {
   return measurements
     .flatMap<DiagnosticLog>((measurement) => {
+      const mode = testModeLogLabels[measurement.testMode ?? 'offline_scan'] ?? 'Scan offline';
       const receivedLog: DiagnosticLog = {
         level: 'INFO',
-        message: `Medição manual recebida: ${measurement.node ?? measurement.label} = ${measurement.normalizedValue}.`,
+        message: `${mode} registrado na ${measurementPoint(measurement)}: ${measurement.normalizedValue}.`,
         source: 'measurementNormalizer',
       };
+      const metadataLogs = scanMetadataLogs(measurement);
 
       if (measurement.states.includes('forced_command_active')) {
-        return [receivedLog, { level: 'TEST', message: `${measurement.label} ativo sob comando forçado`, source: 'measurementNormalizer' }];
+        return [receivedLog, ...metadataLogs, { level: 'TEST', message: `${measurement.label} ativo sob comando forçado`, source: 'measurementNormalizer' }];
       }
 
       if (measurement.isPresent) {
-        return [receivedLog, { level: 'SCAN', message: `${measurement.label} detectado`, source: 'measurementNormalizer' }];
+        return [receivedLog, ...metadataLogs, { level: 'SCAN', message: `${measurement.label} detectado`, source: 'measurementNormalizer' }];
       }
 
       if (measurement.isAbsent) {
-        return [receivedLog, { level: 'WARN', message: `${measurement.label} ausente`, source: 'measurementNormalizer' }];
+        return [receivedLog, ...metadataLogs, { level: 'WARN', message: `${measurement.label} ausente`, source: 'measurementNormalizer' }];
       }
 
       if (measurement.states.includes('low_resistance')) {
-        return [receivedLog, { level: 'FAIL', message: `${measurement.label} baixa resistência: ${measurement.normalizedValue}`, source: 'measurementNormalizer' }];
+        return [receivedLog, ...metadataLogs, { level: 'FAIL', message: `${measurement.label} baixa resistência: ${measurement.normalizedValue}`, source: 'measurementNormalizer' }];
       }
 
       if (measurement.states.includes('current_high')) {
-        return [receivedLog, { level: 'FAIL', message: `${measurement.label} corrente alta: ${measurement.normalizedValue}`, source: 'measurementNormalizer' }];
+        return [receivedLog, ...metadataLogs, { level: 'FAIL', message: `${measurement.label} corrente alta: ${measurement.normalizedValue}`, source: 'measurementNormalizer' }];
       }
 
-      return [receivedLog];
+      return [receivedLog, ...metadataLogs];
     });
 }
 

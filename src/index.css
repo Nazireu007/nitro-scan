@@ -1894,6 +1894,36 @@ button {
   box-shadow: 0 0 10px rgba(34, 211, 238, 0.35);
 }
 
+.manual-section {
+  display: grid;
+  gap: 0.66rem;
+}
+
+.manual-section + .manual-section {
+  margin-top: 1rem;
+}
+
+.manual-section-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.manual-section-heading span {
+  color: #67e8f9;
+  font-size: 0.64rem;
+  font-weight: 950;
+  text-transform: uppercase;
+}
+
+.manual-section-heading strong {
+  color: #94a3b8;
+  font-size: 0.56rem;
+  font-weight: 950;
+  text-transform: uppercase;
+}
+
 .manual-form-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -2098,7 +2128,8 @@ button {
 }
 
 .manual-measurement-list span,
-.manual-measurement-list em {
+.manual-measurement-list em,
+.manual-measurement-list i {
   min-width: 0;
   overflow-wrap: anywhere;
   color: #9fbad1;
@@ -2109,6 +2140,10 @@ button {
 
 .manual-measurement-list b {
   color: #67e8f9;
+}
+
+.manual-measurement-list i {
+  color: #c4b5fd;
 }
 
 .manual-panel-footer {

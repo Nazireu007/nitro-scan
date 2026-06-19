@@ -2,7 +2,13 @@ import { ClipboardList, Play, Plus, RotateCcw, Trash2, X } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import { lgCj87DiagnosticCase } from '../data/diagnosticCases';
 import type { DiagnosticSession } from '../types/diagnostics';
-import type { MeasurementInput, MeasurementType } from '../types/measurements';
+import type {
+  ConfirmationState,
+  MeasurementInput,
+  MeasurementTestMode,
+  MeasurementTestOrigin,
+  MeasurementType,
+} from '../types/measurements';
 
 type ManualMeasurementPanelProps = {
   isOpen: boolean;
@@ -18,6 +24,15 @@ type MeasurementForm = {
   node: string;
   component: string;
   context: string;
+  testMode: MeasurementTestMode;
+  testOrigin: MeasurementTestOrigin;
+  injectionVoltage: string;
+  measuredCurrent: string;
+  signalFrequency: string;
+  returnAmplitude: string;
+  attenuation: string;
+  readChannel: string;
+  confirmationState: ConfirmationState | '';
 };
 
 type MeasurementPreset = {
@@ -34,6 +49,34 @@ const typeOptions: Array<{ value: MeasurementType; label: string }> = [
   { value: 'state', label: 'Estado' },
 ];
 
+const testModeOptions: Array<{ value: MeasurementTestMode; label: string }> = [
+  { value: 'offline_scan', label: 'Scan offline' },
+  { value: 'line_to_gnd', label: 'Linha para GND' },
+  { value: 'low_injection', label: 'Injeção baixa' },
+  { value: 'sine_wave', label: 'Onda senoidal' },
+  { value: 'connector_response', label: 'Resposta por conector' },
+  { value: 'component_test', label: 'Teste de componente' },
+  { value: 'confirmation', label: 'Confirmação' },
+];
+
+const testOriginOptions: Array<{ value: MeasurementTestOrigin; label: string }> = [
+  { value: 'probe', label: 'Ponta de prova' },
+  { value: 'dc_jack', label: 'DC Jack' },
+  { value: 'usb_c_charge', label: 'USB-C / conector de carga' },
+  { value: 'battery_connector', label: 'Conector de bateria' },
+  { value: 'power_connector', label: 'Conector de fonte' },
+  { value: 'signal_flex', label: 'Flat / conector de sinal' },
+  { value: 'other_board_connector', label: 'Outro conector da placa' },
+];
+
+const confirmationOptions: Array<{ value: ConfirmationState | ''; label: string }> = [
+  { value: '', label: 'Sem confirmação' },
+  { value: 'detected', label: 'Detectado' },
+  { value: 'correlated', label: 'Correlacionado' },
+  { value: 'strong_indication', label: 'Forte indício' },
+  { value: 'confirmed', label: 'Confirmado' },
+];
+
 const typeLabels: Record<MeasurementType, string> = {
   voltage: 'Tensão',
   current: 'Corrente',
@@ -41,6 +84,23 @@ const typeLabels: Record<MeasurementType, string> = {
   signal: 'Sinal lógico',
   temperature: 'Temperatura',
   state: 'Estado',
+};
+
+const testModeLabels: Record<MeasurementTestMode, string> = {
+  offline_scan: 'Scan offline',
+  line_to_gnd: 'Linha para GND',
+  low_injection: 'Injeção baixa',
+  sine_wave: 'Onda senoidal',
+  connector_response: 'Resposta por conector',
+  component_test: 'Teste de componente',
+  confirmation: 'Confirmação',
+};
+
+const confirmationLabels: Record<ConfirmationState, string> = {
+  detected: 'Detectado',
+  correlated: 'Correlacionado',
+  strong_indication: 'Forte indício',
+  confirmed: 'Confirmado',
 };
 
 const unitByType: Record<MeasurementType, string> = {
@@ -56,12 +116,21 @@ const unitOptions = ['V', 'A', 'Ω', '°C', 'lógico', 'estado'];
 
 const initialForm: MeasurementForm = {
   label: '',
-  type: 'voltage',
+  type: 'resistance',
   value: '',
-  unit: 'V',
+  unit: 'Ω',
   node: '',
   component: '',
   context: '',
+  testMode: 'offline_scan',
+  testOrigin: 'probe',
+  injectionVoltage: '',
+  measuredCurrent: '',
+  signalFrequency: '',
+  returnAmplitude: '',
+  attenuation: '',
+  readChannel: '',
+  confirmationState: '',
 };
 
 const presets: MeasurementPreset[] = [
@@ -75,6 +144,9 @@ const presets: MeasurementPreset[] = [
       node: '5V_STBY',
       component: 'Fonte/Principal',
       context: 'standby presente',
+      testMode: 'offline_scan',
+      testOrigin: 'probe',
+      confirmationState: 'detected',
     },
   },
   {
@@ -87,6 +159,9 @@ const presets: MeasurementPreset[] = [
       node: '12V',
       component: 'Fonte/Principal',
       context: 'power on ausente',
+      testMode: 'offline_scan',
+      testOrigin: 'probe',
+      confirmationState: 'detected',
     },
   },
   {
@@ -99,42 +174,9 @@ const presets: MeasurementPreset[] = [
       node: '12V',
       component: 'Fonte/Principal',
       context: 'power on presente',
-    },
-  },
-  {
-    title: '14 V presente',
-    measurement: {
-      label: '14 V entrada',
-      type: 'voltage',
-      value: '14 V',
-      unit: 'V',
-      node: '14V',
-      component: 'Fonte/Principal',
-      context: 'entrada presente',
-    },
-  },
-  {
-    title: '3,3 V presente',
-    measurement: {
-      label: 'Linha lógica de 3,3 V',
-      type: 'voltage',
-      value: '3,3 V',
-      unit: 'V',
-      node: '3V3',
-      component: 'Placa principal',
-      context: 'linha presente',
-    },
-  },
-  {
-    title: '1,2 V presente',
-    measurement: {
-      label: 'Linha principal de 1,2 V',
-      type: 'voltage',
-      value: '1,2 V',
-      unit: 'V',
-      node: '1V2',
-      component: 'CPU',
-      context: 'linha presente',
+      testMode: 'confirmation',
+      testOrigin: 'power_connector',
+      confirmationState: 'confirmed',
     },
   },
   {
@@ -147,30 +189,9 @@ const presets: MeasurementPreset[] = [
       node: 'SPI_VCC',
       component: 'SPI Flash',
       context: 'alimentação SPI presente',
-    },
-  },
-  {
-    title: 'CPU fria',
-    measurement: {
-      label: 'Resposta térmica da CPU',
-      type: 'temperature',
-      value: '28 °C',
-      unit: '°C',
-      node: 'CPU',
-      component: 'CPU',
-      context: 'CPU fria sem inicialização',
-    },
-  },
-  {
-    title: 'CPU aquecendo',
-    measurement: {
-      label: 'Resposta térmica da CPU',
-      type: 'temperature',
-      value: '48 °C',
-      unit: '°C',
-      node: 'CPU',
-      component: 'CPU',
-      context: 'CPU aquecendo',
+      testMode: 'offline_scan',
+      testOrigin: 'probe',
+      confirmationState: 'detected',
     },
   },
   {
@@ -183,30 +204,9 @@ const presets: MeasurementPreset[] = [
       node: 'RESET',
       component: 'CPU',
       context: 'power on',
-    },
-  },
-  {
-    title: 'RESET presente',
-    measurement: {
-      label: 'RESET da CPU',
-      type: 'signal',
-      value: 'presente',
-      unit: 'lógico',
-      node: 'RESET',
-      component: 'CPU',
-      context: 'power on',
-    },
-  },
-  {
-    title: 'CLOCK ausente',
-    measurement: {
-      label: 'CLOCK da CPU',
-      type: 'signal',
-      value: 'ausente',
-      unit: 'lógico',
-      node: 'CLOCK',
-      component: 'CPU',
-      context: 'power on',
+      testMode: 'offline_scan',
+      testOrigin: 'signal_flex',
+      confirmationState: 'correlated',
     },
   },
   {
@@ -219,102 +219,223 @@ const presets: MeasurementPreset[] = [
       node: 'CLOCK',
       component: 'CPU',
       context: 'power on',
+      testMode: 'sine_wave',
+      testOrigin: 'probe',
+      signalFrequency: '1 kHz',
+      readChannel: 'Ponta B',
+      confirmationState: 'detected',
     },
   },
   {
-    title: 'ENABLE ausente',
+    title: 'LINHA EM CURTO',
     measurement: {
-      label: 'Buck ENABLE',
-      type: 'signal',
-      value: 'ausente',
-      unit: 'lógico',
-      node: 'ENABLE',
-      component: 'PWM',
-      context: 'power on',
-    },
-  },
-  {
-    title: 'PFC_PCTL ausente',
-    measurement: {
-      label: 'Comando PFC_PCTL',
-      type: 'signal',
-      value: 'ausente',
-      unit: 'lógico',
-      node: 'PFC_PCTL',
-      component: 'Placa principal',
-      context: 'sequência normal',
-    },
-  },
-  {
-    title: 'L304 sem atividade',
-    measurement: {
-      label: 'Atividade de comutação L304',
-      type: 'state',
-      value: 'ausente',
-      unit: 'estado',
-      node: 'L304',
-      component: 'L304',
-      context: 'sem atividade de chaveamento',
-    },
-  },
-  {
-    title: 'PFC_PCTL forçado',
-    measurement: {
-      label: 'Trilho de 12 V com PFC_PCTL forçado',
-      type: 'voltage',
-      value: '12 V',
-      unit: 'V',
-      node: '12V',
-      component: 'Fonte/Principal',
-      context: 'PFC_PCTL forçado',
-    },
-  },
-  {
-    title: 'resistência baixa',
-    measurement: {
-      label: 'Resistência 12 V para GND',
+      label: 'Linha em curto para GND',
       type: 'resistance',
-      value: '0,6 ohm',
+      value: '0,6 Ω',
       unit: 'Ω',
-      node: '12V para GND',
-      component: 'Linha 12V',
-      context: 'placa desligada',
+      node: 'linha para GND',
+      component: 'Linha principal',
+      context: 'placa desligada; pré-scan detectou baixa impedância para GND',
+      testMode: 'line_to_gnd',
+      testOrigin: 'probe',
+      confirmationState: 'strong_indication',
     },
   },
   {
-    title: 'corrente alta em injeção',
+    title: 'BAIXA IMPEDÂNCIA',
     measurement: {
-      label: 'Corrente em injeção no trilho',
-      type: 'current',
-      value: '2,4 A',
-      unit: 'A',
-      node: '12V',
-      component: 'Linha 12V',
-      context: 'injeção com corrente alta',
+      label: 'Baixa impedância no trilho',
+      type: 'resistance',
+      value: '1,4 Ω',
+      unit: 'Ω',
+      node: 'trilho para GND',
+      component: 'Linha medida',
+      context: 'pré-scan com placa desligada',
+      testMode: 'line_to_gnd',
+      testOrigin: 'probe',
+      confirmationState: 'detected',
     },
   },
   {
-    title: 'Corrente normal de bancada',
+    title: 'RESPOSTA AUSENTE',
     measurement: {
-      label: 'Corrente normal de bancada',
-      type: 'current',
-      value: '0,42 A',
-      unit: 'A',
-      node: 'MAIN_IN',
-      component: 'Placa principal',
-      context: 'consumo de bancada',
+      label: 'Resposta ausente no retorno',
+      type: 'signal',
+      value: 'ausente',
+      unit: 'lógico',
+      node: 'RETORNO',
+      component: 'Conector da placa',
+      context: 'sem retorno após estímulo seguro',
+      testMode: 'connector_response',
+      testOrigin: 'other_board_connector',
+      returnAmplitude: 'ausente',
+      readChannel: 'Ponta B',
+      confirmationState: 'correlated',
     },
   },
   {
-    title: 'Corrente baixa',
+    title: 'RETORNO ATENUADO',
     measurement: {
-      label: 'Corrente baixa de bancada',
+      label: 'Retorno atenuado no canal B',
+      type: 'signal',
+      value: 'presente',
+      unit: 'lógico',
+      node: 'PONTO_B',
+      component: 'Conector da placa',
+      context: 'retorno fraco após injeção segura',
+      testMode: 'connector_response',
+      testOrigin: 'other_board_connector',
+      returnAmplitude: '20%',
+      attenuation: 'alta',
+      readChannel: 'Ponta B',
+      confirmationState: 'correlated',
+    },
+  },
+  {
+    title: 'SINAL PRESENTE NO PONTO B',
+    measurement: {
+      label: 'Sinal presente no ponto B',
+      type: 'signal',
+      value: 'presente',
+      unit: 'lógico',
+      node: 'PONTO_B',
+      component: 'Linha de sinal',
+      context: 'resposta capturada no canal B',
+      testMode: 'sine_wave',
+      testOrigin: 'probe',
+      signalFrequency: '1 kHz',
+      returnAmplitude: '80%',
+      readChannel: 'Ponta B',
+      confirmationState: 'detected',
+    },
+  },
+  {
+    title: 'SINAL AUSENTE NO PONTO B',
+    measurement: {
+      label: 'Sinal ausente no ponto B',
+      type: 'signal',
+      value: 'ausente',
+      unit: 'lógico',
+      node: 'PONTO_B',
+      component: 'Linha de sinal',
+      context: 'sem resposta capturada no canal B',
+      testMode: 'sine_wave',
+      testOrigin: 'probe',
+      signalFrequency: '1 kHz',
+      returnAmplitude: 'ausente',
+      readChannel: 'Ponta B',
+      confirmationState: 'correlated',
+    },
+  },
+  {
+    title: 'INJEÇÃO 0,5 V',
+    measurement: {
+      label: 'Injeção segura de 0,5 V',
+      type: 'voltage',
+      value: '0,5 V',
+      unit: 'V',
+      node: 'linha alvo',
+      component: 'Linha medida',
+      context: 'injeção baixa com corrente limitada',
+      testMode: 'low_injection',
+      testOrigin: 'probe',
+      injectionVoltage: '0,5 V',
+      measuredCurrent: '0,12 A',
+      confirmationState: 'detected',
+    },
+  },
+  {
+    title: 'CORRENTE ALTA',
+    measurement: {
+      label: 'Corrente alta em injeção baixa',
       type: 'current',
-      value: '0,05 A',
+      value: '1,8 A',
       unit: 'A',
-      node: 'MAIN_IN',
-      component: 'Placa principal',
-      context: 'consumo baixo',
+      node: 'linha alvo',
+      component: 'Linha medida',
+      context: 'injeção baixa com consumo elevado',
+      testMode: 'low_injection',
+      testOrigin: 'probe',
+      injectionVoltage: '0,5 V',
+      measuredCurrent: '1,8 A',
+      confirmationState: 'strong_indication',
+    },
+  },
+  {
+    title: 'CAMINHO ABERTO',
+    measurement: {
+      label: 'Caminho aberto na linha',
+      type: 'resistance',
+      value: 'OL',
+      unit: 'Ω',
+      node: 'linha alvo',
+      component: 'Trilha / conector',
+      context: 'prova elétrica indica caminho aberto',
+      testMode: 'connector_response',
+      testOrigin: 'other_board_connector',
+      confirmationState: 'strong_indication',
+    },
+  },
+  {
+    title: 'MOSFET D-S BAIXO',
+    measurement: {
+      label: 'MOSFET D-S baixo',
+      type: 'resistance',
+      value: '0,4 Ω',
+      unit: 'Ω',
+      node: 'D-S',
+      component: 'MOSFET',
+      context: 'teste de componente com baixa resistência entre dreno e source',
+      testMode: 'component_test',
+      testOrigin: 'probe',
+      confirmationState: 'strong_indication',
+    },
+  },
+  {
+    title: 'DIODO CONDUZ NOS DOIS SENTIDOS',
+    measurement: {
+      label: 'Diodo conduz nos dois sentidos',
+      type: 'state',
+      value: 'presente',
+      unit: 'estado',
+      node: 'DIODO',
+      component: 'Diodo',
+      context: 'condução detectada nos dois sentidos',
+      testMode: 'component_test',
+      testOrigin: 'probe',
+      confirmationState: 'strong_indication',
+    },
+  },
+  {
+    title: 'CAPACITOR AQUECEU NA INJEÇÃO',
+    measurement: {
+      label: 'Capacitor aqueceu na injeção',
+      type: 'temperature',
+      value: '58 °C',
+      unit: '°C',
+      node: 'linha alvo',
+      component: 'Capacitor',
+      context: 'capacitor aqueceu na injeção 0,5 V',
+      testMode: 'low_injection',
+      testOrigin: 'probe',
+      injectionVoltage: '0,5 V',
+      measuredCurrent: '0,80 A',
+      confirmationState: 'confirmed',
+    },
+  },
+  {
+    title: 'LINHA NORMALIZOU APÓS ISOLAR COMPONENTE',
+    measurement: {
+      label: 'Linha normalizou após isolar componente',
+      type: 'resistance',
+      value: '24 Ω',
+      unit: 'Ω',
+      node: 'linha alvo',
+      component: 'Componente isolado',
+      context: 'linha normalizou após isolar componente',
+      testMode: 'confirmation',
+      testOrigin: 'probe',
+      confirmationState: 'confirmed',
     },
   },
 ];
@@ -332,25 +453,27 @@ function createMeasurement(
   measurement: Omit<MeasurementInput, 'id' | 'timestamp'>,
   index: number,
 ): MeasurementInput {
-  const base = slug(`${measurement.node ?? measurement.label}-${measurement.context ?? ''}`) || 'medicao';
+  const base = slug(`${measurement.node ?? measurement.label}-${measurement.context ?? ''}`) || 'scan';
 
   return {
     ...measurement,
-    id: `manual-${base}-${Date.now()}-${index}`,
+    testMode: measurement.testMode ?? 'offline_scan',
+    testOrigin: measurement.testOrigin ?? 'probe',
+    id: `scan-${base}-${Date.now()}-${index}`,
     timestamp: new Date().toISOString(),
   };
 }
 
 function buildSession(measurements: MeasurementInput[]): DiagnosticSession {
   return {
-    id: `manual-session-${Date.now()}`,
-    title: 'Sessão manual de bancada',
-    deviceCategory: 'Entrada manual',
+    id: `scan-offline-session-${Date.now()}`,
+    title: 'Sessão de scan offline',
+    deviceCategory: 'Modo Scan Offline',
     symptoms: measurements.length > 0
       ? measurements.map((measurement) => `${measurement.node ?? measurement.label}: ${measurement.value}`)
       : ['medições insuficientes'],
     measurements,
-    selectedCase: 'manual',
+    selectedCase: 'scan-offline',
     createdAt: new Date().toISOString(),
   };
 }
@@ -365,10 +488,31 @@ function displayValue(measurement: MeasurementInput): string {
   return `${value} ${measurement.unit}`;
 }
 
+function responseSummary(measurement: MeasurementInput): string {
+  return [
+    measurement.injectionVoltage ? `inj. ${measurement.injectionVoltage}` : '',
+    measurement.measuredCurrent ? `corr. ${measurement.measuredCurrent}` : '',
+    measurement.signalFrequency ? measurement.signalFrequency : '',
+    measurement.returnAmplitude ? `ret. ${measurement.returnAmplitude}` : '',
+    measurement.attenuation ? `at. ${measurement.attenuation}` : '',
+    measurement.readChannel,
+  ]
+    .filter(Boolean)
+    .join(' / ');
+}
+
+function compactModeLabel(measurement: MeasurementInput): string {
+  return measurement.testMode ? testModeLabels[measurement.testMode] : 'Scan offline';
+}
+
 export function ManualMeasurementPanel({ isOpen, onClose, onAnalyze }: ManualMeasurementPanelProps) {
   const [form, setForm] = useState<MeasurementForm>(initialForm);
   const [measurements, setMeasurements] = useState<MeasurementInput[]>([]);
-  const canAdd = form.value.trim().length > 0 || form.node.trim().length > 0;
+  const canAdd =
+    form.value.trim().length > 0 ||
+    form.node.trim().length > 0 ||
+    form.injectionVoltage.trim().length > 0 ||
+    form.returnAmplitude.trim().length > 0;
   const countLabel = useMemo(
     () => `${measurements.length} ${measurements.length === 1 ? 'medição' : 'medições'}`,
     [measurements.length],
@@ -393,16 +537,32 @@ export function ManualMeasurementPanel({ isOpen, onClose, onAnalyze }: ManualMea
       return;
     }
 
-    const label = form.label.trim() || `${typeLabels[form.type]} ${form.node.trim() || form.value.trim()}`;
+    const label = form.label.trim() || `${typeLabels[form.type]} ${form.node.trim() || form.value.trim() || form.testMode}`;
+    const contextParts = [
+      form.context.trim(),
+      form.injectionVoltage.trim() ? `injeção ${form.injectionVoltage.trim()}` : '',
+      form.returnAmplitude.trim() ? `retorno ${form.returnAmplitude.trim()}` : '',
+      form.attenuation.trim() ? `atenuação ${form.attenuation.trim()}` : '',
+      form.readChannel.trim() ? `canal ${form.readChannel.trim()}` : '',
+    ].filter(Boolean);
     const measurement = createMeasurement(
       {
         label,
         type: form.type,
-        value: form.value.trim() || 'n/d',
+        value: form.value.trim() || form.returnAmplitude.trim() || form.injectionVoltage.trim() || 'n/d',
         unit: form.unit,
         node: form.node.trim(),
         component: form.component.trim(),
-        context: form.context.trim(),
+        context: contextParts.join('; '),
+        testMode: form.testMode,
+        testOrigin: form.testOrigin,
+        injectionVoltage: form.injectionVoltage.trim(),
+        measuredCurrent: form.measuredCurrent.trim(),
+        signalFrequency: form.signalFrequency.trim(),
+        returnAmplitude: form.returnAmplitude.trim(),
+        attenuation: form.attenuation.trim(),
+        readChannel: form.readChannel.trim(),
+        confirmationState: form.confirmationState || undefined,
       },
       measurements.length,
     );
@@ -410,6 +570,8 @@ export function ManualMeasurementPanel({ isOpen, onClose, onAnalyze }: ManualMea
     setMeasurements((current) => [...current, measurement]);
     setForm((current) => ({
       ...initialForm,
+      testMode: current.testMode,
+      testOrigin: current.testOrigin,
       type: current.type,
       unit: current.unit,
       component: current.component,
@@ -436,85 +598,192 @@ export function ManualMeasurementPanel({ isOpen, onClose, onAnalyze }: ManualMea
 
   return (
     <div className="manual-panel-backdrop" role="presentation">
-      <aside className="manual-panel" aria-label="Modo Manual">
+      <aside className="manual-panel" aria-label="Modo Scan Offline">
         <header className="manual-panel-header">
           <div>
-            <span>Modo Manual</span>
-            <strong>Entrada de medições</strong>
+            <span>MODO SCAN OFFLINE</span>
+            <strong>Entrada de scan, injeção e resposta elétrica</strong>
           </div>
-          <button type="button" aria-label="Fechar modo manual" onClick={onClose}>
+          <button type="button" aria-label="Fechar modo scan offline" onClick={onClose}>
             <X className="h-5 w-5" aria-hidden="true" />
           </button>
         </header>
 
         <div className="manual-panel-body">
-          <section className="manual-form-grid" aria-label="Cadastrar medição manual">
-            <label>
-              <span>Nome da medição</span>
-              <input
-                value={form.label}
-                onChange={(event) => updateForm('label', event.target.value)}
-                placeholder="Ex.: Trilho de 12 V"
-              />
-            </label>
+          <section className="manual-section" aria-label="Entrada principal do scan">
+            <div className="manual-section-heading">
+              <span>Entrada principal</span>
+            </div>
+            <div className="manual-form-grid">
+              <label>
+                <span>Nome da medição</span>
+                <input
+                  value={form.label}
+                  onChange={(event) => updateForm('label', event.target.value)}
+                  placeholder="Ex.: Linha 12 V, VBUS USB-C, B+ bateria"
+                />
+              </label>
 
-            <label>
-              <span>Tipo</span>
-              <select value={form.type} onChange={(event) => updateForm('type', event.target.value as MeasurementType)}>
-                {typeOptions.map((type) => (
-                  <option key={type.value} value={type.value}>
-                    {type.label}
-                  </option>
-                ))}
-              </select>
-            </label>
+              <label>
+                <span>Tipo</span>
+                <select value={form.type} onChange={(event) => updateForm('type', event.target.value as MeasurementType)}>
+                  {typeOptions.map((type) => (
+                    <option key={type.value} value={type.value}>
+                      {type.label}
+                    </option>
+                  ))}
+                </select>
+              </label>
 
-            <label>
-              <span>Valor</span>
-              <input
-                value={form.value}
-                onChange={(event) => updateForm('value', event.target.value)}
-                placeholder="5,1 V / ausente / OL"
-              />
-            </label>
+              <label>
+                <span>Valor</span>
+                <input
+                  value={form.value}
+                  onChange={(event) => updateForm('value', event.target.value)}
+                  placeholder="Ex.: 0,6 Ω, 5,1 V, OL, ausente, retorno 20%"
+                />
+              </label>
 
-            <label>
-              <span>Unidade</span>
-              <select value={form.unit} onChange={(event) => updateForm('unit', event.target.value)}>
-                {unitOptions.map((unit) => (
-                  <option key={unit} value={unit}>
-                    {unit}
-                  </option>
-                ))}
-              </select>
-            </label>
+              <label>
+                <span>Unidade</span>
+                <select value={form.unit} onChange={(event) => updateForm('unit', event.target.value)}>
+                  {unitOptions.map((unit) => (
+                    <option key={unit} value={unit}>
+                      {unit}
+                    </option>
+                  ))}
+                </select>
+              </label>
 
-            <label>
-              <span>Nó/Ponto medido</span>
-              <input
-                value={form.node}
-                onChange={(event) => updateForm('node', event.target.value)}
-                placeholder="12V, SPI_VCC, RESET"
-              />
-            </label>
+              <label>
+                <span>Nó/Ponto</span>
+                <input
+                  value={form.node}
+                  onChange={(event) => updateForm('node', event.target.value)}
+                  placeholder="Ex.: 12 V, SPI_VCC, RESET, VBUS, B+"
+                />
+              </label>
 
-            <label>
-              <span>Componente relacionado</span>
-              <input
-                value={form.component}
-                onChange={(event) => updateForm('component', event.target.value)}
-                placeholder="L304, CPU, PWM"
-              />
-            </label>
+              <label>
+                <span>Componente relacionado</span>
+                <input
+                  value={form.component}
+                  onChange={(event) => updateForm('component', event.target.value)}
+                  placeholder="Ex.: L304, CPU, MOSFET, LDO, conector USB-C"
+                />
+              </label>
 
-            <label className="manual-form-wide">
-              <span>Contexto</span>
-              <input
-                value={form.context}
-                onChange={(event) => updateForm('context', event.target.value)}
-                placeholder="standby, power on, comando forçado, injeção"
-              />
-            </label>
+              <label className="manual-form-wide">
+                <span>Contexto</span>
+                <input
+                  value={form.context}
+                  onChange={(event) => updateForm('context', event.target.value)}
+                  placeholder="Ex.: placa desligada, pré-scan, injeção 0,5 V, onda 1 kHz"
+                />
+              </label>
+            </div>
+          </section>
+
+          <section className="manual-section" aria-label="Origem e modo de teste">
+            <div className="manual-section-heading">
+              <span>Origem e modo de teste</span>
+            </div>
+            <div className="manual-form-grid">
+              <label>
+                <span>Modo de teste</span>
+                <select value={form.testMode} onChange={(event) => updateForm('testMode', event.target.value as MeasurementTestMode)}>
+                  {testModeOptions.map((mode) => (
+                    <option key={mode.value} value={mode.value}>
+                      {mode.label}
+                    </option>
+                  ))}
+                </select>
+              </label>
+
+              <label>
+                <span>Origem do teste</span>
+                <select value={form.testOrigin} onChange={(event) => updateForm('testOrigin', event.target.value as MeasurementTestOrigin)}>
+                  {testOriginOptions.map((origin) => (
+                    <option key={origin.value} value={origin.value}>
+                      {origin.label}
+                    </option>
+                  ))}
+                </select>
+              </label>
+
+              <label className="manual-form-wide">
+                <span>Estado de confirmação</span>
+                <select value={form.confirmationState} onChange={(event) => updateForm('confirmationState', event.target.value as ConfirmationState | '')}>
+                  {confirmationOptions.map((confirmation) => (
+                    <option key={confirmation.value || 'none'} value={confirmation.value}>
+                      {confirmation.label}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            </div>
+          </section>
+
+          <section className="manual-section" aria-label="Resposta do scan">
+            <div className="manual-section-heading">
+              <span>Resposta do scan</span>
+              <strong>opcional</strong>
+            </div>
+            <div className="manual-form-grid">
+              <label>
+                <span>Tensão de injeção</span>
+                <input
+                  value={form.injectionVoltage}
+                  onChange={(event) => updateForm('injectionVoltage', event.target.value)}
+                  placeholder="Ex.: 0,3 V, 0,5 V, 1 V"
+                />
+              </label>
+
+              <label>
+                <span>Corrente medida</span>
+                <input
+                  value={form.measuredCurrent}
+                  onChange={(event) => updateForm('measuredCurrent', event.target.value)}
+                  placeholder="Ex.: 0,12 A, 0,80 A"
+                />
+              </label>
+
+              <label>
+                <span>Frequência do sinal</span>
+                <input
+                  value={form.signalFrequency}
+                  onChange={(event) => updateForm('signalFrequency', event.target.value)}
+                  placeholder="Ex.: 100 Hz, 1 kHz, 10 kHz"
+                />
+              </label>
+
+              <label>
+                <span>Retorno / amplitude</span>
+                <input
+                  value={form.returnAmplitude}
+                  onChange={(event) => updateForm('returnAmplitude', event.target.value)}
+                  placeholder="Ex.: 80%, 20%, ausente"
+                />
+              </label>
+
+              <label>
+                <span>Atenuação</span>
+                <input
+                  value={form.attenuation}
+                  onChange={(event) => updateForm('attenuation', event.target.value)}
+                  placeholder="Ex.: baixa, média, alta"
+                />
+              </label>
+
+              <label>
+                <span>Canal de leitura</span>
+                <input
+                  value={form.readChannel}
+                  onChange={(event) => updateForm('readChannel', event.target.value)}
+                  placeholder="Ex.: Ponta B, Ponta C, retorno no conector"
+                />
+              </label>
+            </div>
           </section>
 
           <div className="manual-action-row">
@@ -524,13 +793,13 @@ export function ManualMeasurementPanel({ isOpen, onClose, onAnalyze }: ManualMea
             </button>
             <button type="button" onClick={() => setMeasurements([])}>
               <Trash2 className="h-4 w-4" aria-hidden="true" />
-              Limpar medição
+              Limpar medições
             </button>
           </div>
 
-          <section className="manual-presets" aria-label="Presets rápidos de medições">
+          <section className="manual-presets" aria-label="Predefinições rápidas de scan offline">
             <div>
-              <span>Presets rápidos</span>
+              <span>Predefinições rápidas</span>
               <strong>{countLabel}</strong>
             </div>
             <div className="manual-preset-grid">
@@ -542,26 +811,31 @@ export function ManualMeasurementPanel({ isOpen, onClose, onAnalyze }: ManualMea
             </div>
           </section>
 
-          <section className="manual-measurement-list" aria-label="Medições inseridas">
+          <section className="manual-measurement-list" aria-label="Medições e scans adicionados">
             {measurements.length === 0 ? (
               <p className="manual-empty-state">Nenhuma medição inserida.</p>
             ) : (
-              measurements.map((measurement) => (
-                <article key={measurement.id}>
-                  <div>
-                    <strong>{typeLabels[measurement.type]}</strong>
-                    <span>{measurement.node || measurement.label}</span>
-                  </div>
-                  <p>
-                    <b>{displayValue(measurement)}</b>
-                    <span>{measurement.component || 'sem componente'}</span>
-                    <em>{measurement.context || 'sem contexto'}</em>
-                  </p>
-                  <button type="button" aria-label={`Remover ${measurement.label}`} onClick={() => removeMeasurement(measurement.id)}>
-                    <X className="h-4 w-4" aria-hidden="true" />
-                  </button>
-                </article>
-              ))
+              measurements.map((measurement) => {
+                const response = responseSummary(measurement);
+
+                return (
+                  <article key={measurement.id}>
+                    <div>
+                      <strong>{typeLabels[measurement.type]}</strong>
+                      <span>{measurement.node || measurement.label}</span>
+                    </div>
+                    <p>
+                      <b>{displayValue(measurement)}</b>
+                      <span>{compactModeLabel(measurement)}</span>
+                      <em>{measurement.confirmationState ? confirmationLabels[measurement.confirmationState] : measurement.context || 'sem contexto'}</em>
+                      {response ? <i>{response}</i> : null}
+                    </p>
+                    <button type="button" aria-label={`Remover ${measurement.label}`} onClick={() => removeMeasurement(measurement.id)}>
+                      <X className="h-4 w-4" aria-hidden="true" />
+                    </button>
+                  </article>
+                );
+              })
             )}
           </section>
         </div>

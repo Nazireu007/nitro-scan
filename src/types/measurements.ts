@@ -1,5 +1,29 @@
 export type MeasurementType = 'voltage' | 'current' | 'resistance' | 'signal' | 'temperature' | 'state';
 
+export type MeasurementTestMode =
+  | 'offline_scan'
+  | 'line_to_gnd'
+  | 'low_injection'
+  | 'sine_wave'
+  | 'connector_response'
+  | 'component_test'
+  | 'confirmation';
+
+export type MeasurementTestOrigin =
+  | 'probe'
+  | 'dc_jack'
+  | 'usb_c_charge'
+  | 'battery_connector'
+  | 'power_connector'
+  | 'signal_flex'
+  | 'other_board_connector';
+
+export type ConfirmationState =
+  | 'detected'
+  | 'correlated'
+  | 'strong_indication'
+  | 'confirmed';
+
 export type MeasurementState =
   | 'voltage_present'
   | 'voltage_absent'
@@ -24,6 +48,15 @@ export type MeasurementInput = {
   node?: string;
   component?: string;
   context?: string;
+  testMode?: MeasurementTestMode;
+  testOrigin?: MeasurementTestOrigin;
+  injectionVoltage?: string;
+  measuredCurrent?: string;
+  signalFrequency?: string;
+  returnAmplitude?: string;
+  attenuation?: string;
+  readChannel?: string;
+  confirmationState?: ConfirmationState;
   timestamp?: string;
   expected?: {
     nominal?: number;

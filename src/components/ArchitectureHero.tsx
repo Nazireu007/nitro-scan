@@ -836,7 +836,7 @@ function LogsPanel({ logs }: { logs: EngineLog[] }) {
             <time>{logTime(index)}</time>
             <strong className={logTagClass(log.level)}>{logTag(log.level)}</strong>
             <code>{translateLogMessage(log.message)}</code>
-            <em>{log.level === 'WARN' || log.level === 'FAIL' ? '400' : '200'}</em>
+            <em>{log.level === 'WARN' || log.level === 'FAIL' ? 'ALERTA' : 'OK'}</em>
           </p>
         ))}
       </div>

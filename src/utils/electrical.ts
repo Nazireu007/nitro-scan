@@ -15,7 +15,35 @@ export function parseNumericValue(value: MeasurementInput['value']): number | un
   return match ? Number(match[0]) : undefined;
 }
 
-export function normalizeUnit(unit: string | undefined, rawValue: MeasurementInput['value']): NormalizedMeasurement['normalizedUnit'] {
+export function normalizeUnit(
+  type: MeasurementInput['type'],
+  unit: string | undefined,
+  rawValue: MeasurementInput['value'],
+): NormalizedMeasurement['normalizedUnit'] {
+  if (type === 'voltage') {
+    return 'V';
+  }
+
+  if (type === 'current') {
+    return 'A';
+  }
+
+  if (type === 'resistance') {
+    return 'Ω';
+  }
+
+  if (type === 'temperature') {
+    return '°C';
+  }
+
+  if (type === 'signal') {
+    return 'signal';
+  }
+
+  if (type === 'state') {
+    return 'state';
+  }
+
   const source = `${rawValue ?? ''} ${unit ?? ''}`.toLowerCase();
 
   if (source.includes('ohm') || source.includes('Ω')) {

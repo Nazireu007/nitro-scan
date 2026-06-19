@@ -92,7 +92,7 @@ function classifySignalOrState(type: MeasurementInput['type'], numericValue: num
   const presentState: MeasurementState = type === 'signal' ? 'signal_present' : 'state_present';
   const absentState: MeasurementState = type === 'signal' ? 'signal_absent' : 'state_absent';
 
-  if (hasAny(source, ['ausente', 'absent', 'dead', 'inativo', 'sem atividade', '0'])) {
+  if (hasAny(source, ['ausente', 'absent', 'dead', 'inativo', 'sem atividade'])) {
     return [absentState];
   }
 
@@ -125,6 +125,10 @@ function uniqueStates(states: MeasurementState[]): MeasurementState[] {
 
 export function normalizeMeasurements(input: MeasurementInput[]): NormalizedMeasurement[] {
   return input.map((measurement) => {
+    const valueSource = textValue(measurement.value);
+    const signalStateSource = [measurement.value, measurement.context]
+      .map((item) => String(item ?? '').toLowerCase())
+      .join(' ');
     const source = [
       measurement.value,
       measurement.unit,
@@ -136,7 +140,7 @@ export function normalizeMeasurements(input: MeasurementInput[]): NormalizedMeas
       .map((item) => String(item ?? '').toLowerCase())
       .join(' ');
     const numericValue = parseNumericValue(measurement.value);
-    const normalizedUnit = normalizeUnit(measurement.unit, measurement.value);
+    const normalizedUnit = normalizeUnit(measurement.type, measurement.unit, measurement.value);
     const stateGroups: MeasurementState[] = [];
 
     if (measurement.type === 'voltage') {
@@ -152,7 +156,7 @@ export function normalizeMeasurements(input: MeasurementInput[]): NormalizedMeas
     }
 
     if (measurement.type === 'signal' || measurement.type === 'state') {
-      stateGroups.push(...classifySignalOrState(measurement.type, numericValue, source));
+      stateGroups.push(...classifySignalOrState(measurement.type, numericValue, signalStateSource || valueSource));
     }
 
     if (measurement.type === 'temperature') {

@@ -90,6 +90,18 @@ const presets: MeasurementPreset[] = [
     },
   },
   {
+    title: '12 V normal presente',
+    measurement: {
+      label: 'Trilho de 12 V normal',
+      type: 'voltage',
+      value: '12 V',
+      unit: 'V',
+      node: '12V',
+      component: 'Fonte/Principal',
+      context: 'power on presente',
+    },
+  },
+  {
     title: '14 V presente',
     measurement: {
       label: '14 V entrada',
@@ -138,6 +150,30 @@ const presets: MeasurementPreset[] = [
     },
   },
   {
+    title: 'CPU fria',
+    measurement: {
+      label: 'Resposta térmica da CPU',
+      type: 'temperature',
+      value: '28 °C',
+      unit: '°C',
+      node: 'CPU',
+      component: 'CPU',
+      context: 'CPU fria sem inicialização',
+    },
+  },
+  {
+    title: 'CPU aquecendo',
+    measurement: {
+      label: 'Resposta térmica da CPU',
+      type: 'temperature',
+      value: '48 °C',
+      unit: '°C',
+      node: 'CPU',
+      component: 'CPU',
+      context: 'CPU aquecendo',
+    },
+  },
+  {
     title: 'RESET ausente',
     measurement: {
       label: 'RESET da CPU',
@@ -150,11 +186,35 @@ const presets: MeasurementPreset[] = [
     },
   },
   {
+    title: 'RESET presente',
+    measurement: {
+      label: 'RESET da CPU',
+      type: 'signal',
+      value: 'presente',
+      unit: 'lógico',
+      node: 'RESET',
+      component: 'CPU',
+      context: 'power on',
+    },
+  },
+  {
     title: 'CLOCK ausente',
     measurement: {
       label: 'CLOCK da CPU',
       type: 'signal',
       value: 'ausente',
+      unit: 'lógico',
+      node: 'CLOCK',
+      component: 'CPU',
+      context: 'power on',
+    },
+  },
+  {
+    title: 'CLOCK presente',
+    measurement: {
+      label: 'CLOCK da CPU',
+      type: 'signal',
+      value: 'presente',
       unit: 'lógico',
       node: 'CLOCK',
       component: 'CPU',
@@ -183,6 +243,18 @@ const presets: MeasurementPreset[] = [
       node: 'PFC_PCTL',
       component: 'Placa principal',
       context: 'sequência normal',
+    },
+  },
+  {
+    title: 'L304 sem atividade',
+    measurement: {
+      label: 'Atividade de comutação L304',
+      type: 'state',
+      value: 'ausente',
+      unit: 'estado',
+      node: 'L304',
+      component: 'L304',
+      context: 'sem atividade de chaveamento',
     },
   },
   {
@@ -219,6 +291,30 @@ const presets: MeasurementPreset[] = [
       node: '12V',
       component: 'Linha 12V',
       context: 'injeção com corrente alta',
+    },
+  },
+  {
+    title: 'Corrente normal de bancada',
+    measurement: {
+      label: 'Corrente normal de bancada',
+      type: 'current',
+      value: '0,42 A',
+      unit: 'A',
+      node: 'MAIN_IN',
+      component: 'Placa principal',
+      context: 'consumo de bancada',
+    },
+  },
+  {
+    title: 'Corrente baixa',
+    measurement: {
+      label: 'Corrente baixa de bancada',
+      type: 'current',
+      value: '0,05 A',
+      unit: 'A',
+      node: 'MAIN_IN',
+      component: 'Placa principal',
+      context: 'consumo baixo',
     },
   },
 ];
@@ -428,7 +524,7 @@ export function ManualMeasurementPanel({ isOpen, onClose, onAnalyze }: ManualMea
             </button>
             <button type="button" onClick={() => setMeasurements([])}>
               <Trash2 className="h-4 w-4" aria-hidden="true" />
-              Limpar medições
+              Limpar medição
             </button>
           </div>
 

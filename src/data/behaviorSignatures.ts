@@ -118,7 +118,7 @@ export const behaviorSignatures: BehaviorSignature[] = [
       { id: 'cpu_pch', title: 'CPU/PCH', category: 'boot', description: 'Processador ou ponte não progride após alimentação.' },
     ],
     nextTests: [
-      { id: 'measure-clock', title: 'Medir clock.', description: 'Medir cristal/clock do processador.', priority: 1 },
+      { id: 'measure-clock', title: 'Medir relógio/cristal.', description: 'Medir cristal/clock do processador.', priority: 1 },
       { id: 'measure-reset', title: 'Medir reset.', description: 'Verificar se reset é liberado na partida.', priority: 1 },
       { id: 'check-spi-bus', title: 'Verificar CS/CLK/Data.', description: 'Conferir atividade SPI em CS, CLK e DATA.', priority: 2 },
       { id: 'reflash-firmware', title: 'Regravar firmware se aplicável.', description: 'Ler, comparar e regravar a SPI quando o barramento justificar.', priority: 3 },

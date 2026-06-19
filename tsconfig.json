@@ -15,6 +15,7 @@
     "resolveJsonModule": true,
     "isolatedModules": true,
     "noEmit": true,
+    "tsBuildInfoFile": ".vite/tsconfig.tsbuildinfo",
     "jsx": "react-jsx"
   },
   "include": ["src"],

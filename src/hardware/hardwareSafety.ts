@@ -1,4 +1,4 @@
-import type { HardwareFrame, HardwareSafetyAssessment } from './hardwareTypes';
+import type { HardwareCommand, HardwareFrame, HardwareSafetyAssessment, HardwareSafetyState } from './hardwareTypes';
 
 export const HARDWARE_SAFETY_LIMITS = {
   extremeLowImpedanceOhms: 1,
@@ -58,7 +58,12 @@ export function assessHardwareSafety(frame: HardwareFrame): HardwareSafetyAssess
     frame.injectionVoltage !== null &&
     frame.injectionVoltage > HARDWARE_SAFETY_LIMITS.maximumLowInjectionVolts
   ) {
-    reasons.push('Tensão solicitada excede o limite da injeção baixa.');
+    return {
+      state: 'blocked',
+      canAnalyze: false,
+      canInject: false,
+      reasons: ['Tensão solicitada excede 1 V no modo inicial. Injeção bloqueada.'],
+    };
   }
 
   if (reasons.length > 0 || frame.safetyState === 'warning') {
@@ -90,4 +95,35 @@ export function assessHardwareSafety(frame: HardwareFrame): HardwareSafetyAssess
 export function canAdvanceHardwareProtocol(frame: HardwareFrame): boolean {
   const assessment = assessHardwareSafety(frame);
   return assessment.canAnalyze && assessment.state !== 'blocked' && assessment.state !== 'emergency_stop';
+}
+
+export function canExecuteCommand(
+  command: HardwareCommand,
+  frameOrSafetyState?: HardwareFrame | HardwareSafetyState,
+): boolean {
+  if (command.command === 'emergency_stop' || command.command === 'stop') return true;
+  if (command.command === 'pre_scan' || command.command === 'read_impedance') return true;
+
+  const frame = typeof frameOrSafetyState === 'object' ? frameOrSafetyState : undefined;
+  const safetyState = frame ? assessHardwareSafety(frame).state : frameOrSafetyState;
+
+  if (!safetyState || safetyState === 'blocked' || safetyState === 'emergency_stop') return false;
+
+  if (command.command === 'inject_low') {
+    return Boolean(
+      frame?.groundDetected &&
+      frame.preScanCompleted &&
+      (command.maxVoltage ?? 0) <= HARDWARE_SAFETY_LIMITS.maximumLowInjectionVolts,
+    );
+  }
+
+  if (command.command === 'inject_sine') {
+    return Boolean(
+      frame?.groundDetected &&
+      frame.preScanCompleted &&
+      (command.maxVoltage ?? 0) <= HARDWARE_SAFETY_LIMITS.maximumLowInjectionVolts,
+    );
+  }
+
+  return command.command === 'read_response';
 }

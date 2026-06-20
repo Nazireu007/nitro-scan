@@ -48,6 +48,7 @@ function sourceText(input: OfflineScanInput): string {
       input.readChannel,
       input.componentLabel,
       input.componentType,
+      input.confirmationProof,
     ].join(' '),
   );
 }

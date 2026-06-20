@@ -61,6 +61,7 @@ export type MeasurementInput = {
   componentLabel?: string;
   componentType?: ComponentType;
   confirmationState?: ConfirmationState;
+  confirmationProof?: string;
   timestamp?: string;
   expected?: {
     nominal?: number;

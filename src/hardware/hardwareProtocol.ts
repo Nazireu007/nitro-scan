@@ -19,6 +19,7 @@ type HardwareRawMetadata = {
   componentType?: ComponentType;
   componentLabel?: string;
   confirmationState?: ConfirmationState;
+  confirmationProof?: string;
   preScanCompleted?: boolean;
 };
 
@@ -71,6 +72,7 @@ function metadataFromRaw(raw: unknown): HardwareRawMetadata {
     componentType: componentType ? componentType as ComponentType : undefined,
     componentLabel: stringValue(raw.componentLabel) || undefined,
     confirmationState: confirmationState ? confirmationState as ConfirmationState : undefined,
+    confirmationProof: stringValue(raw.confirmationProof) || undefined,
     preScanCompleted: typeof raw.preScanCompleted === 'boolean' ? raw.preScanCompleted : undefined,
   };
 }
@@ -198,35 +200,45 @@ export function hardwareFrameToOfflineScanInput(frame: HardwareFrame): OfflineSc
     componentType: metadata.componentType,
     componentLabel: metadata.componentLabel,
     confirmationState: metadata.confirmationState,
+    confirmationProof: metadata.confirmationProof,
   };
 }
 
-function command(commandName: HardwareCommand['command'], mode: HardwareScanMode, values: Partial<HardwareCommand> = {}): HardwareCommand {
+function command(commandName: HardwareCommand['command'], mode: HardwareScanMode, point: string, values: Partial<HardwareCommand> = {}): HardwareCommand {
   return {
     type: 'nitro_command',
     command: commandName,
     mode,
+    point,
     timestamp: new Date().toISOString(),
     ...values,
   };
 }
 
-export function createPreScanCommand(): HardwareCommand {
-  return command('pre_scan', 'one_point_scan', { limitCurrent: 0.01, maxVoltage: 0.3 });
+export function createPreScanCommand(point = 'VIN'): HardwareCommand {
+  return command('pre_scan', 'one_point_scan', point, { limitCurrent: 0.01, maxVoltage: 0.3 });
 }
 
-export function createLowInjectionCommand(limitCurrent = 0.05, maxVoltage = 0.5): HardwareCommand {
-  return command('inject_low', 'low_injection', { limitCurrent, maxVoltage });
+export function createReadImpedanceCommand(point = 'VIN'): HardwareCommand {
+  return command('read_impedance', 'line_to_gnd', point);
 }
 
-export function createSineCommand(frequency = 1000, maxVoltage = 0.5): HardwareCommand {
-  return command('inject_sine', 'sine_response', { limitCurrent: 0.05, maxVoltage, frequency });
+export function createLowInjectionCommand(limitCurrent = 0.05, maxVoltage = 0.5, point = 'VIN'): HardwareCommand {
+  return command('inject_low', 'low_injection', point, { limitCurrent, maxVoltage });
 }
 
-export function createStopCommand(): HardwareCommand {
-  return command('stop', 'one_point_scan');
+export function createSineCommand(frequency = 1000, maxVoltage = 0.5, point = 'VIN'): HardwareCommand {
+  return command('inject_sine', 'sine_response', point, { limitCurrent: 0.05, maxVoltage, frequency });
 }
 
-export function createEmergencyStopCommand(): HardwareCommand {
-  return command('emergency_stop', 'one_point_scan');
+export function createReadResponseCommand(point = 'VIN'): HardwareCommand {
+  return command('read_response', 'connector_response', point);
+}
+
+export function createStopCommand(point = 'VIN'): HardwareCommand {
+  return command('stop', 'one_point_scan', point);
+}
+
+export function createEmergencyStopCommand(point = 'VIN'): HardwareCommand {
+  return command('emergency_stop', 'one_point_scan', point);
 }

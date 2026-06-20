@@ -34,6 +34,7 @@ export type ConsoleScanInput = {
   componentLabel?: string;
   componentType?: ComponentType;
   confirmationState?: ConfirmationState;
+  confirmationProof?: string;
 };
 
 export type ConsoleAnalysis = {
@@ -118,6 +119,7 @@ function inputSource(input: ConsoleScanInput): string {
       input.componentLabel,
       input.componentType,
       input.confirmationState,
+      input.confirmationProof,
     ].join(' '),
   );
 }
@@ -275,7 +277,7 @@ function measurementLabel(input: ConsoleScanInput): string {
 
 function createMeasurement(input: ConsoleScanInput, timestamp: string): MeasurementInput {
   const type = inferMeasurementType(input);
-  const context = [input.context, 'placa desligada'].filter(Boolean).join('; ');
+  const context = [input.context, input.confirmationProof, 'placa desligada'].filter(Boolean).join('; ');
   const componentType = inferComponentType(input);
   const injectionVoltage = inferInjectionVoltage(input);
   const measuredCurrent = inferMeasuredCurrent(input);
@@ -307,6 +309,7 @@ function createMeasurement(input: ConsoleScanInput, timestamp: string): Measurem
     componentLabel: inferComponentLabel(input, componentType),
     componentType,
     confirmationState: inferConfirmation(input),
+    confirmationProof: input.confirmationProof,
     timestamp,
   };
 }
@@ -325,7 +328,7 @@ function buildOfflineScanInput(input: ConsoleScanInput, session: DiagnosticSessi
     node: input.node.trim() || 'linha analisada',
     response: input.response.trim() || 'n/d',
     unit: input.unit,
-    context: input.context.trim() || 'placa desligada; scan offline',
+    context: [input.context.trim() || 'placa desligada; scan offline', input.confirmationProof].filter(Boolean).join('; '),
     injectionVoltage: inferInjectionVoltage(input),
     measuredCurrent: inferMeasuredCurrent(input),
     signalFrequency: inferSignalFrequency(input),
@@ -338,6 +341,7 @@ function buildOfflineScanInput(input: ConsoleScanInput, session: DiagnosticSessi
     componentLabel: inferComponentLabel(input, componentType),
     componentType,
     confirmationState: inferConfirmation(input),
+    confirmationProof: input.confirmationProof,
   };
 }
 
@@ -553,6 +557,7 @@ export function consoleInputFromHardwareFrame(frame: HardwareFrame): ConsoleScan
     componentLabel: offlineInput.componentLabel,
     componentType: offlineInput.componentType,
     confirmationState: offlineInput.confirmationState,
+    confirmationProof: offlineInput.confirmationProof,
   };
 }
 
@@ -598,7 +603,9 @@ export function analyzeHardwareConsoleFrame(frame: HardwareFrame): ConsoleAnalys
       session,
       result,
       confirmationState: 'detected',
-      headline: 'SCAN BLOQUEADO — SEGURANÇA',
+      headline: hardwareAnalysis.safety.state === 'emergency_stop'
+        ? 'EMERGÊNCIA — CORRENTE ACIMA DO LIMITE'
+        : 'SCAN BLOQUEADO — SEGURANÇA',
       confidence: 0,
       analyzedAt: new Date().toISOString(),
       source: 'hardware',

@@ -843,6 +843,113 @@
   gap: 0.3rem;
 }
 
+.hardware-runtime-panel {
+  display: grid;
+  min-width: 0;
+  gap: 0.42rem;
+  border: 1px solid rgba(34, 223, 255, 0.16);
+  border-radius: 6px;
+  padding: 0.52rem;
+  background: rgba(3, 10, 23, 0.72);
+}
+
+.hardware-runtime-status {
+  display: flex;
+  min-width: 0;
+  gap: 0.42rem;
+  align-items: center;
+  color: #b8d2df;
+  font-size: 0.62rem;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.hardware-runtime-status i {
+  width: 0.42rem;
+  height: 0.42rem;
+  flex: 0 0 auto;
+  border-radius: 50%;
+  background: var(--console-green);
+  box-shadow: 0 0 8px rgba(116, 247, 176, 0.6);
+}
+
+.hardware-runtime-actions {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 0.38rem;
+}
+
+.hardware-runtime-actions button {
+  display: flex;
+  min-width: 0;
+  min-height: 2.15rem;
+  align-items: center;
+  justify-content: center;
+  gap: 0.36rem;
+  border: 1px solid rgba(34, 223, 255, 0.2);
+  border-radius: 4px;
+  padding: 0.42rem 0.52rem;
+  color: #bed5e1;
+  background: #06111f;
+  cursor: pointer;
+  font: inherit;
+  font-size: 0.58rem;
+  font-weight: 850;
+  line-height: 1.2;
+}
+
+.hardware-runtime-actions button:last-child {
+  grid-column: 1 / -1;
+}
+
+.hardware-runtime-actions button:hover:not(:disabled),
+.hardware-runtime-actions button:focus-visible {
+  border-color: rgba(34, 223, 255, 0.5);
+  color: #ffffff;
+  background: #082033;
+  outline: none;
+}
+
+.hardware-runtime-actions button:disabled {
+  cursor: not-allowed;
+  opacity: 0.68;
+}
+
+.hardware-runtime-actions svg {
+  width: 0.86rem;
+  height: 0.86rem;
+  flex: 0 0 auto;
+  color: var(--console-cyan);
+}
+
+.hardware-runtime-actions .hardware-emergency-button {
+  border-color: rgba(255, 102, 125, 0.32);
+  color: #ffc3cc;
+}
+
+.hardware-runtime-actions .hardware-emergency-button svg {
+  color: var(--console-red);
+}
+
+.hardware-runtime-panel p,
+.hardware-runtime-panel small {
+  margin: 0;
+  overflow-wrap: anywhere;
+  line-height: 1.35;
+}
+
+.hardware-runtime-panel p {
+  color: #86a7ba;
+  font-size: 0.58rem;
+  font-weight: 750;
+}
+
+.hardware-runtime-panel small {
+  color: #607f93;
+  font-size: 0.53rem;
+  font-weight: 650;
+}
+
 .scan-control-form input,
 .nitro-console-app .nitro-select-trigger {
   width: 100%;
@@ -896,14 +1003,16 @@
   gap: 0.52rem;
 }
 
-.hardware-simulator-panel {
+.hardware-simulator-panel,
+.technical-details-panel {
   min-width: 0;
   border: 1px solid rgba(34, 223, 255, 0.14);
   border-radius: 6px;
   background: rgba(3, 10, 23, 0.66);
 }
 
-.hardware-simulator-panel summary {
+.hardware-simulator-panel summary,
+.technical-details-panel summary {
   display: grid;
   min-height: 2.25rem;
   grid-template-columns: auto minmax(0, 1fr) auto;
@@ -918,16 +1027,19 @@
   text-transform: uppercase;
 }
 
-.hardware-simulator-panel summary::-webkit-details-marker {
+.hardware-simulator-panel summary::-webkit-details-marker,
+.technical-details-panel summary::-webkit-details-marker {
   display: none;
 }
 
-.hardware-simulator-panel summary:focus-visible {
+.hardware-simulator-panel summary:focus-visible,
+.technical-details-panel summary:focus-visible {
   outline: 1px solid rgba(34, 223, 255, 0.62);
   outline-offset: 2px;
 }
 
-.hardware-simulator-panel summary > svg:first-child {
+.hardware-simulator-panel summary > svg:first-child,
+.technical-details-panel summary > svg:first-child {
   width: 0.92rem;
   height: 0.92rem;
   color: var(--console-cyan);
@@ -940,8 +1052,30 @@
   transition: transform 160ms ease;
 }
 
+.technical-details-chevron {
+  width: 0.86rem;
+  height: 0.86rem;
+  color: #6f91a7;
+  transition: transform 160ms ease;
+}
+
 .hardware-simulator-panel[open] .hardware-simulator-chevron {
   transform: rotate(180deg);
+}
+
+.technical-details-panel[open] .technical-details-chevron {
+  transform: rotate(180deg);
+}
+
+.technical-details-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.48rem;
+  padding: 0 0.52rem 0.52rem;
+}
+
+.technical-proof-field {
+  grid-column: 1 / -1;
 }
 
 .hardware-simulator-actions {
@@ -1272,11 +1406,12 @@
     gap: 0.48rem;
   }
 
-  .scan-control-form > label:nth-child(3),
-  .scan-control-form > label:nth-child(5),
+  .hardware-runtime-panel,
+  .scan-full-field,
   .scan-response-row,
   .scan-analyze-button,
   .scan-secondary-actions,
+  .technical-details-panel,
   .hardware-simulator-panel {
     grid-column: 1 / -1;
   }
@@ -1311,8 +1446,11 @@
   }
 
   .scan-response-row,
+  .hardware-runtime-panel,
+  .scan-full-field,
   .scan-analyze-button,
   .scan-secondary-actions,
+  .technical-details-panel,
   .hardware-simulator-panel {
     grid-column: 1 / -1;
   }
@@ -1400,8 +1538,11 @@
   }
 
   .scan-response-row,
+  .hardware-runtime-panel,
+  .scan-full-field,
   .scan-analyze-button,
   .scan-secondary-actions,
+  .technical-details-panel,
   .hardware-simulator-panel {
     grid-column: 1;
   }
@@ -1476,6 +1617,26 @@
 
   .hardware-simulator-actions {
     grid-template-columns: minmax(0, 1fr);
+  }
+
+  .technical-details-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .technical-proof-field {
+    grid-column: 1;
+  }
+
+  .hardware-runtime-actions {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .hardware-runtime-actions button:last-child {
+    grid-column: 1;
+  }
+
+  .hardware-runtime-actions button {
+    min-height: 2.75rem;
   }
 
   .live-log-line {

@@ -29,6 +29,7 @@ function sourceText(input: OfflineScanInput): string {
       input.componentLabel,
       input.componentType,
       input.confirmationState,
+      input.confirmationProof,
     ].join(' '),
   );
 }
@@ -89,6 +90,10 @@ export function runConfirmationEngine({
       'reparo de trilha normalizou',
       'jumper normalizou',
       'continuidade confirma aberto',
+      'resposta antes/depois provou interrupcao',
+      'resposta antes/depois provou interrupção',
+      'comparacao antes/depois confirmou',
+      'comparação antes/depois confirmou',
     ]);
   const hasLocalizedThermalProof =
     hasAny(source, ['aquecimento localizado']) &&

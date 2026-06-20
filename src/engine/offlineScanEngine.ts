@@ -31,6 +31,7 @@ function sourceText(input: OfflineScanInput): string {
       input.componentLabel,
       input.componentType,
       input.confirmationState,
+      input.confirmationProof,
     ].join(' '),
   );
 }

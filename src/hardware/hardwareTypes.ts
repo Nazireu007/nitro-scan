@@ -78,6 +78,7 @@ export type HardwareCommand = {
   type: 'nitro_command';
   command: HardwareCommandName;
   mode: HardwareScanMode;
+  point?: string;
   limitCurrent?: number;
   maxVoltage?: number;
   frequency?: number;

@@ -29,6 +29,7 @@ function sourceText(input: OfflineScanInput): string {
       input.context,
       input.componentLabel,
       input.componentType,
+      input.confirmationProof,
     ].join(' '),
   );
 }
@@ -113,7 +114,7 @@ function statusFor(componentType: ComponentType, confirmed: boolean, source: str
 
 function confirmationFor(triggered: boolean, correlated: boolean, confirmed: boolean, source: string): ConfirmationState {
   if (confirmed) return 'confirmed';
-  if (triggered && correlated && hasAny(source, ['corrente alta', 'aquecimento localizado', 'retorno atenuado', 'd-s baixo', 'ds baixo'])) return 'strong_indication';
+  if (triggered && correlated && hasAny(source, ['corrente alta', 'aquecimento localizado', 'aqueceu', 'aquecimento', 'retorno atenuado', 'd-s baixo', 'ds baixo'])) return 'strong_indication';
   if (triggered && correlated) return 'correlated';
   return triggered ? 'detected' : 'correlated';
 }

@@ -43,6 +43,7 @@ export type OfflineScanInput = {
   componentLabel?: string;
   componentType?: ComponentType;
   confirmationState?: ConfirmationState;
+  confirmationProof?: string;
 };
 
 export type LineFinding = {

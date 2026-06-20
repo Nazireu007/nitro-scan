@@ -1,5 +1,5 @@
 import type { FormEvent } from 'react';
-import { ChevronDown, CircuitBoard, ClipboardList, Eraser, Play, ShieldCheck } from 'lucide-react';
+import { AlertTriangle, ChevronDown, CircuitBoard, ClipboardList, Eraser, Play, ShieldCheck, SlidersHorizontal, Usb, Zap } from 'lucide-react';
 import {
   consoleTestModeOptions,
   consoleTestOriginOptions,
@@ -7,6 +7,7 @@ import {
   type ConsoleScanInput,
 } from '../engine/consoleAdapter';
 import type { MeasurementTestMode, MeasurementTestOrigin } from '../types/measurements';
+import type { ComponentType } from '../types/components';
 import { hardwareSimulationOptions, type HardwareSimulationScenario } from '../hardware/hardwareSimulator';
 import { NitroSelect } from './NitroSelect';
 
@@ -17,9 +18,56 @@ type ScanControlPanelProps = {
   onClear: () => void;
   onLoadCase: () => void;
   onSimulateHardware: (scenario: HardwareSimulationScenario) => void;
+  hardwareStatus: string;
+  hardwareNotice: string;
+  serialGuidance: string;
+  serialSupported: boolean;
+  serialConnected: boolean;
+  scanRunning: boolean;
+  onToggleSerial: () => void;
+  onOneClickScan: () => void;
+  onEmergencyStop: () => void;
 };
 
-export function ScanControlPanel({ input, onChange, onAnalyze, onClear, onLoadCase, onSimulateHardware }: ScanControlPanelProps) {
+const attenuationOptions: Array<{ value: '' | 'baixa' | 'média' | 'alta'; label: string }> = [
+  { value: '', label: 'Não informada' },
+  { value: 'baixa', label: 'Baixa' },
+  { value: 'média', label: 'Média' },
+  { value: 'alta', label: 'Alta' },
+];
+
+const componentTypeOptions: Array<{ value: ComponentType | ''; label: string }> = [
+  { value: '', label: 'Não informado' },
+  { value: 'mosfet', label: 'MOSFET' },
+  { value: 'capacitor', label: 'Capacitor' },
+  { value: 'diode', label: 'Diodo' },
+  { value: 'inductor', label: 'Bobina/Indutor' },
+  { value: 'ldo', label: 'LDO' },
+  { value: 'resistor', label: 'Resistor' },
+  { value: 'pwm_controller', label: 'Controlador PWM' },
+  { value: 'buck_controller', label: 'Controlador Buck' },
+  { value: 'spi_flash', label: 'SPI Flash' },
+  { value: 'cpu', label: 'CPU' },
+  { value: 'unknown_ic', label: 'CI não identificado' },
+];
+
+export function ScanControlPanel({
+  input,
+  onChange,
+  onAnalyze,
+  onClear,
+  onLoadCase,
+  onSimulateHardware,
+  hardwareStatus,
+  hardwareNotice,
+  serialGuidance,
+  serialSupported,
+  serialConnected,
+  scanRunning,
+  onToggleSerial,
+  onOneClickScan,
+  onEmergencyStop,
+}: ScanControlPanelProps) {
   const canAnalyze = input.node.trim().length > 0 || input.response.trim().length > 0;
 
   function update<K extends keyof ConsoleScanInput>(key: K, value: ConsoleScanInput[K]) {
@@ -45,6 +93,31 @@ export function ScanControlPanel({ input, onChange, onAnalyze, onClear, onLoadCa
       </header>
 
       <form className="scan-control-form" onSubmit={submit}>
+        <section className="hardware-runtime-panel" aria-label="Conexão com Nitro Probe" aria-live="polite">
+          <div className="hardware-runtime-status">
+            <i aria-hidden="true" />
+            <span>Hardware: {hardwareStatus}</span>
+          </div>
+          <div className="hardware-runtime-actions">
+            <button type="button" onClick={onOneClickScan} disabled={scanRunning}>
+              <Zap aria-hidden="true" />
+              {scanRunning ? 'SCAN EM ANDAMENTO' : 'INICIAR SCAN DA PLACA'}
+            </button>
+            <button className="hardware-emergency-button" type="button" onClick={onEmergencyStop}>
+              <AlertTriangle aria-hidden="true" />
+              Parada
+            </button>
+            <button type="button" onClick={onToggleSerial} disabled={!serialSupported}>
+              <Usb aria-hidden="true" />
+              {serialSupported
+                ? serialConnected ? 'Desconectar Nitro Probe' : 'Conectar Nitro Probe'
+                : 'Conexão direta indisponível neste navegador'}
+            </button>
+          </div>
+          <p>{hardwareNotice}</p>
+          {!serialConnected && <small>{serialGuidance}</small>}
+        </section>
+
         <label>
           <span>Modo de teste</span>
           <NitroSelect<MeasurementTestMode>
@@ -65,7 +138,7 @@ export function ScanControlPanel({ input, onChange, onAnalyze, onClear, onLoadCa
           />
         </label>
 
-        <label>
+        <label className="scan-full-field">
           <span>Nó/Ponto</span>
           <input
             value={input.node}
@@ -94,7 +167,7 @@ export function ScanControlPanel({ input, onChange, onAnalyze, onClear, onLoadCa
           </label>
         </div>
 
-        <label>
+        <label className="scan-full-field">
           <span>Contexto</span>
           <input
             value={input.context}
@@ -102,6 +175,70 @@ export function ScanControlPanel({ input, onChange, onAnalyze, onClear, onLoadCa
             placeholder="Ex.: pré-scan, injeção 0,5 V"
           />
         </label>
+
+        <details className="technical-details-panel">
+          <summary>
+            <SlidersHorizontal aria-hidden="true" />
+            <span>Detalhes técnicos</span>
+            <ChevronDown className="technical-details-chevron" aria-hidden="true" />
+          </summary>
+          <div className="technical-details-grid">
+            <label>
+              <span>Tensão de injeção</span>
+              <input value={input.injectionVoltage ?? ''} onChange={(event) => update('injectionVoltage', event.target.value)} placeholder="Ex.: 0,5 V" />
+            </label>
+            <label>
+              <span>Corrente medida</span>
+              <input value={input.measuredCurrent ?? ''} onChange={(event) => update('measuredCurrent', event.target.value)} placeholder="Ex.: 0,82 A" />
+            </label>
+            <label>
+              <span>Frequência</span>
+              <input value={input.signalFrequency ?? ''} onChange={(event) => update('signalFrequency', event.target.value)} placeholder="Ex.: 1 kHz" />
+            </label>
+            <label>
+              <span>Retorno</span>
+              <input value={input.returnAmplitude ?? ''} onChange={(event) => update('returnAmplitude', event.target.value)} placeholder="Ex.: 18%" />
+            </label>
+            <label>
+              <span>Atenuação</span>
+              <NitroSelect<'' | 'baixa' | 'média' | 'alta'>
+                ariaLabel="Atenuação"
+                value={(input.attenuation as '' | 'baixa' | 'média' | 'alta' | undefined) ?? ''}
+                options={attenuationOptions}
+                onChange={(value) => update('attenuation', value || undefined)}
+              />
+            </label>
+            <label>
+              <span>Componente</span>
+              <input value={input.componentLabel ?? ''} onChange={(event) => update('componentLabel', event.target.value)} placeholder="Ex.: Q301, C412, L304" />
+            </label>
+            <label>
+              <span>Tipo de componente</span>
+              <NitroSelect<ComponentType | ''>
+                ariaLabel="Tipo de componente"
+                value={input.componentType ?? ''}
+                options={componentTypeOptions}
+                onChange={(value) => update('componentType', value || undefined)}
+              />
+            </label>
+            <label>
+              <span>Canal A</span>
+              <input value={input.probeA ?? ''} onChange={(event) => update('probeA', event.target.value)} placeholder="Ex.: VIN" />
+            </label>
+            <label>
+              <span>Canal B</span>
+              <input value={input.probeB ?? ''} onChange={(event) => update('probeB', event.target.value)} placeholder="Ex.: retorno" />
+            </label>
+            <label>
+              <span>Canal C</span>
+              <input value={input.probeC ?? ''} onChange={(event) => update('probeC', event.target.value)} placeholder="Ex.: GND" />
+            </label>
+            <label className="technical-proof-field">
+              <span>Prova de confirmação</span>
+              <input value={input.confirmationProof ?? ''} onChange={(event) => update('confirmationProof', event.target.value)} placeholder="Ex.: linha normalizou após isolar componente" />
+            </label>
+          </div>
+        </details>
 
         <button className="nitro-button nitro-button-primary scan-analyze-button" type="submit" disabled={!canAnalyze}>
           <Play aria-hidden="true" />

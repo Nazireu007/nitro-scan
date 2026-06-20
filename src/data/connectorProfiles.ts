@@ -1,0 +1,60 @@
+import type { ConnectorProfile } from '../types/connectors';
+
+export const connectorProfiles: ConnectorProfile[] = [
+  {
+    type: 'dc_jack',
+    label: 'DC Jack',
+    description: 'Entrada primária de alimentação com foco em positivo para GND, fusível, MOSFET de entrada e capacitores de entrada.',
+    focusLines: ['VIN', 'B+', 'GND', 'fusível', 'MOSFET de entrada'],
+    commonRisks: ['curto em VIN', 'fusível aberto', 'MOSFET de entrada em curto', 'capacitor de entrada em curto'],
+    suggestedTests: ['Medir positivo para GND com placa desligada.', 'Conferir fusível de entrada.', 'Medir MOSFET de entrada D-S.'],
+  },
+  {
+    type: 'usb_c_charge',
+    label: 'USB-C / conector de carga',
+    description: 'Entrada USB-C com foco em VBUS, GND, CC1/CC2 e caminho de carga.',
+    focusLines: ['VBUS', 'GND', 'CC1', 'CC2', 'linha de carga'],
+    commonRisks: ['curto em VBUS', 'proteção TVS em curto', 'controlador de carga travado'],
+    suggestedTests: ['Pré-scan em VBUS para GND.', 'Conferir CC1/CC2.', 'Medir queda em proteção TVS.'],
+  },
+  {
+    type: 'battery_connector',
+    label: 'Conector de bateria',
+    description: 'Conector de bateria com foco em B+, GND, NTC, ID/DATA e proteção.',
+    focusLines: ['B+', 'GND', 'NTC', 'ID/DATA', 'fusível/proteção'],
+    commonRisks: ['B+ em curto', 'NTC aberto', 'proteção/fusível aberto'],
+    suggestedTests: ['Medir B+ para GND.', 'Conferir NTC/ID.', 'Verificar fusível ou proteção série.'],
+  },
+  {
+    type: 'power_connector',
+    label: 'Conector de fonte',
+    description: 'Conector de fonte com foco em standby, 12 V, 5 V, PWR_ON e enable/comando.',
+    focusLines: ['5 V standby', '12 V', 'PWR_ON', 'ENABLE', 'GND'],
+    commonRisks: ['comando ausente', 'trilho secundário ausente', 'curto em linha de saída'],
+    suggestedTests: ['Medir standby.', 'Conferir comando PWR_ON/ENABLE.', 'Pré-scan do trilho ausente para GND.'],
+  },
+  {
+    type: 'signal_flex',
+    label: 'Flat / conector de sinal',
+    description: 'Conector de sinal com foco em continuidade, retorno de onda e interrupção entre pontos.',
+    focusLines: ['ponto A', 'ponto B', 'GND', 'linha de sinal'],
+    commonRisks: ['trilha rompida', 'flat aberto', 'conector oxidado', 'retorno atenuado'],
+    suggestedTests: ['Injetar onda leve no ponto A.', 'Verificar retorno no ponto B.', 'Medir continuidade ponto a ponto.'],
+  },
+  {
+    type: 'probe',
+    label: 'Ponta de prova',
+    description: 'Medição direta por ponta de prova para pré-scan, resistência, injeção limitada e resposta local.',
+    focusLines: ['linha alvo', 'GND', 'ponto de retorno'],
+    commonRisks: ['linha em curto', 'baixa impedância', 'carga anormal'],
+    suggestedTests: ['Confirmar referência GND.', 'Medir resistência para GND.', 'Aplicar injeção limitada se houver baixa impedância.'],
+  },
+  {
+    type: 'other_board_connector',
+    label: 'Outro conector da placa',
+    description: 'Conector genérico da placa com foco em resposta elétrica e comparação entre pinos.',
+    focusLines: ['linha alvo', 'GND', 'retorno', 'pino adjacente'],
+    commonRisks: ['curto entre pinos', 'caminho aberto', 'retorno atenuado'],
+    suggestedTests: ['Mapear pinos antes da injeção.', 'Comparar continuidade entre pontos.', 'Aplicar sinal leve e observar retorno.'],
+  },
+];

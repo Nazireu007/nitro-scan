@@ -1,3 +1,6 @@
+import type { ComponentType } from './components';
+import type { ConfirmationState as ScanConfirmationState } from './confirmation';
+
 export type MeasurementType = 'voltage' | 'current' | 'resistance' | 'signal' | 'temperature' | 'state';
 
 export type MeasurementTestMode =
@@ -18,11 +21,7 @@ export type MeasurementTestOrigin =
   | 'signal_flex'
   | 'other_board_connector';
 
-export type ConfirmationState =
-  | 'detected'
-  | 'correlated'
-  | 'strong_indication'
-  | 'confirmed';
+export type ConfirmationState = ScanConfirmationState;
 
 export type MeasurementState =
   | 'voltage_present'
@@ -56,6 +55,11 @@ export type MeasurementInput = {
   returnAmplitude?: string;
   attenuation?: string;
   readChannel?: string;
+  probeA?: string;
+  probeB?: string;
+  probeC?: string;
+  componentLabel?: string;
+  componentType?: ComponentType;
   confirmationState?: ConfirmationState;
   timestamp?: string;
   expected?: {

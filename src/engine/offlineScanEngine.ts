@@ -39,6 +39,10 @@ function hasAny(source: string, patterns: string[]): boolean {
   return patterns.some((pattern) => source.includes(normalizeText(pattern)));
 }
 
+function hasToken(source: string, token: string): boolean {
+  return source.split(/[^a-z0-9]+/).includes(normalizeText(token));
+}
+
 function lineName(input: OfflineScanInput): string {
   return input.node.trim() || 'linha analisada';
 }
@@ -85,7 +89,10 @@ function evaluateLineFindings(input: OfflineScanInput, injectionFindings: Inject
   const highResistance = input.unit === 'Ω' && value !== undefined && value > 100000;
   const shortText = hasAny(source, ['curto', 'baixa impedancia', 'baixa impedância', 'linha para gnd baixa', 'd-s baixo', 'ds baixo']);
   const currentText = hasAny(source, ['corrente alta', 'corrente elevada', 'consumo alto']);
-  const openText = hasAny(source, ['ol', 'aberto', 'caminho aberto', 'sem continuidade', 'trilha rompida']);
+  const openText =
+    hasToken(source, 'OL') ||
+    hasToken(source, 'aberto') ||
+    hasAny(source, ['caminho aberto', 'sem continuidade', 'trilha rompida']);
   const noReturnText = hasAny(source, ['retorno ausente', 'sem retorno', 'sinal ausente', 'ausente no ponto b']);
   const attenuatedText = hasAny(source, ['retorno atenuado', 'atenuacao alta', 'atenuação alta', 'amplitude baixa']) || (returnValue !== undefined && returnValue > 0 && returnValue <= 35);
   const normalizedText = hasAny(source, ['linha normalizou', 'normalizou apos isolar', 'normalizou após isolar', 'curto sumiu']);
@@ -307,6 +314,10 @@ function buildSummary(result: OfflineScanResult): string {
     return `${result.confirmation.reasons[0] ?? 'Diagnóstico confirmado por prova elétrica.'} O estado foi fechado sem depender de chute.`;
   }
 
+  if (result.confirmation.missingProofs.length === 0) {
+    return result.confirmation.reasons[0] ?? 'Resposta elétrica registrada como referência.';
+  }
+
   const missing = result.confirmation.missingProofs[0] ?? 'Executar prova elétrica de fechamento.';
   const reason = result.confirmation.reasons[0] ?? 'Achado inicial detectado pelo scan offline.';
 
@@ -359,7 +370,9 @@ export function runOfflineScan(input: OfflineScanInput): OfflineScanResult {
     ...component.logs,
     ...(confirmation.confirmationState === 'confirmed'
       ? [log('AI', 'Diagnóstico confirmado por prova elétrica.')]
-      : [log('TEST', 'Prova de isolamento pendente.')]),
+      : confirmation.missingProofs.length > 0
+        ? [log('TEST', 'Prova de isolamento pendente.')]
+        : [log('SCAN', 'Resposta elétrica normal registrada como referência.')]),
   ];
   const result: OfflineScanResult = {
     ...draft,

@@ -896,6 +896,85 @@
   gap: 0.52rem;
 }
 
+.hardware-simulator-panel {
+  min-width: 0;
+  border: 1px solid rgba(34, 223, 255, 0.14);
+  border-radius: 6px;
+  background: rgba(3, 10, 23, 0.66);
+}
+
+.hardware-simulator-panel summary {
+  display: grid;
+  min-height: 2.25rem;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  gap: 0.48rem;
+  align-items: center;
+  padding: 0.48rem 0.62rem;
+  color: #9bb7c9;
+  cursor: pointer;
+  font-size: 0.62rem;
+  font-weight: 900;
+  list-style: none;
+  text-transform: uppercase;
+}
+
+.hardware-simulator-panel summary::-webkit-details-marker {
+  display: none;
+}
+
+.hardware-simulator-panel summary:focus-visible {
+  outline: 1px solid rgba(34, 223, 255, 0.62);
+  outline-offset: 2px;
+}
+
+.hardware-simulator-panel summary > svg:first-child {
+  width: 0.92rem;
+  height: 0.92rem;
+  color: var(--console-cyan);
+}
+
+.hardware-simulator-chevron {
+  width: 0.86rem;
+  height: 0.86rem;
+  color: #6f91a7;
+  transition: transform 160ms ease;
+}
+
+.hardware-simulator-panel[open] .hardware-simulator-chevron {
+  transform: rotate(180deg);
+}
+
+.hardware-simulator-actions {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.38rem;
+  padding: 0 0.52rem 0.52rem;
+}
+
+.hardware-simulator-actions button {
+  min-width: 0;
+  min-height: 2rem;
+  border: 1px solid rgba(34, 223, 255, 0.14);
+  border-radius: 4px;
+  padding: 0.42rem 0.48rem;
+  color: #a9c3d2;
+  background: #06111f;
+  cursor: pointer;
+  font: inherit;
+  font-size: 0.58rem;
+  font-weight: 800;
+  line-height: 1.2;
+  text-align: left;
+}
+
+.hardware-simulator-actions button:hover,
+.hardware-simulator-actions button:focus-visible {
+  border-color: rgba(34, 223, 255, 0.48);
+  color: #f1fbff;
+  background: #082033;
+  outline: none;
+}
+
 .nitro-select-menu {
   z-index: 120;
   gap: 0.12rem;
@@ -1197,7 +1276,8 @@
   .scan-control-form > label:nth-child(5),
   .scan-response-row,
   .scan-analyze-button,
-  .scan-secondary-actions {
+  .scan-secondary-actions,
+  .hardware-simulator-panel {
     grid-column: 1 / -1;
   }
 
@@ -1232,7 +1312,8 @@
 
   .scan-response-row,
   .scan-analyze-button,
-  .scan-secondary-actions {
+  .scan-secondary-actions,
+  .hardware-simulator-panel {
     grid-column: 1 / -1;
   }
 
@@ -1320,7 +1401,8 @@
 
   .scan-response-row,
   .scan-analyze-button,
-  .scan-secondary-actions {
+  .scan-secondary-actions,
+  .hardware-simulator-panel {
     grid-column: 1;
   }
 
@@ -1389,6 +1471,10 @@
   }
 
   .scan-secondary-actions {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .hardware-simulator-actions {
     grid-template-columns: minmax(0, 1fr);
   }
 

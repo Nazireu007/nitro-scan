@@ -1,5 +1,5 @@
 import type { FormEvent } from 'react';
-import { ClipboardList, Eraser, Play, ShieldCheck } from 'lucide-react';
+import { ChevronDown, CircuitBoard, ClipboardList, Eraser, Play, ShieldCheck } from 'lucide-react';
 import {
   consoleTestModeOptions,
   consoleTestOriginOptions,
@@ -7,6 +7,7 @@ import {
   type ConsoleScanInput,
 } from '../engine/consoleAdapter';
 import type { MeasurementTestMode, MeasurementTestOrigin } from '../types/measurements';
+import { hardwareSimulationOptions, type HardwareSimulationScenario } from '../hardware/hardwareSimulator';
 import { NitroSelect } from './NitroSelect';
 
 type ScanControlPanelProps = {
@@ -15,9 +16,10 @@ type ScanControlPanelProps = {
   onAnalyze: () => void;
   onClear: () => void;
   onLoadCase: () => void;
+  onSimulateHardware: (scenario: HardwareSimulationScenario) => void;
 };
 
-export function ScanControlPanel({ input, onChange, onAnalyze, onClear, onLoadCase }: ScanControlPanelProps) {
+export function ScanControlPanel({ input, onChange, onAnalyze, onClear, onLoadCase, onSimulateHardware }: ScanControlPanelProps) {
   const canAnalyze = input.node.trim().length > 0 || input.response.trim().length > 0;
 
   function update<K extends keyof ConsoleScanInput>(key: K, value: ConsoleScanInput[K]) {
@@ -116,8 +118,26 @@ export function ScanControlPanel({ input, onChange, onAnalyze, onClear, onLoadCa
             Caso LG CJ87
           </button>
         </div>
+
+        <details className="hardware-simulator-panel">
+          <summary>
+            <CircuitBoard aria-hidden="true" />
+            <span>Simular hardware</span>
+            <ChevronDown className="hardware-simulator-chevron" aria-hidden="true" />
+          </summary>
+          <div className="hardware-simulator-actions">
+            {hardwareSimulationOptions.map((option) => (
+              <button
+                key={option.value}
+                type="button"
+                onClick={() => onSimulateHardware(option.value)}
+              >
+                {option.label}
+              </button>
+            ))}
+          </div>
+        </details>
       </form>
     </aside>
   );
 }
-

@@ -1,12 +1,15 @@
 import { useMemo, useState } from 'react';
 import {
   analyzeConsoleInput,
+  analyzeHardwareConsoleFrame,
   consoleTestModeOptions,
+  consoleInputFromHardwareFrame,
   createDefaultConsoleInput,
   loadLgConsoleCase,
   type ConsoleAnalysis,
   type ConsoleScanInput,
 } from '../engine/consoleAdapter';
+import { simulateHardwareScenario, type HardwareSimulationScenario } from '../hardware/hardwareSimulator';
 import { EvidenceStrip } from './EvidenceStrip';
 import { InvestigationStrip } from './InvestigationStrip';
 import { LiveLogStrip } from './LiveLogStrip';
@@ -59,6 +62,12 @@ export function NitroConsole() {
     commitAnalysis(loadLgConsoleCase());
   }
 
+  function simulateHardware(scenario: HardwareSimulationScenario) {
+    const frame = simulateHardwareScenario(scenario);
+    setInput(consoleInputFromHardwareFrame(frame));
+    commitAnalysis(analyzeHardwareConsoleFrame(frame));
+  }
+
   return (
     <main className="nitro-console-app">
       <div className="nitro-console-grid" aria-hidden="true" />
@@ -85,6 +94,7 @@ export function NitroConsole() {
             onAnalyze={analyze}
             onClear={clearInput}
             onLoadCase={loadLgCase}
+            onSimulateHardware={simulateHardware}
           />
         </div>
 

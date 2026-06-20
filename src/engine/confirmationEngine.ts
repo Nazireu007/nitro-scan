@@ -62,9 +62,23 @@ export function runConfirmationEngine({
   injectionFindings,
 }: ConfirmationInput): ConfirmationDecision {
   const source = sourceText(input);
-  const hasClosureProof =
-    input.confirmationState === 'confirmed' ||
-    hasAny(source, [
+  const onlyNormalResponse =
+    lineFindings.length > 0 &&
+    lineFindings.every((finding) => finding.status === 'normal') &&
+    componentFindings.length === 0 &&
+    injectionFindings.every((finding) => finding.status === 'normal_return');
+
+  if (onlyNormalResponse) {
+    return {
+      confirmationState: 'detected',
+      confidence: 58,
+      reasons: ['Resposta elétrica dentro do padrão informado para a linha analisada.'],
+      missingProofs: [],
+      nextConfirmationTests: [],
+    };
+  }
+  const confirmationRequested = input.confirmationState === 'confirmed';
+  const hasClosureProof = hasAny(source, [
       'linha normalizou',
       'normalizou apos isolar',
       'normalizou após isolar',
@@ -110,6 +124,9 @@ export function runConfirmationEngine({
   const hasOpenPathEvidence =
     lineFindings.some((finding) => finding.status === 'open_path' || finding.status === 'no_return_signal') ||
     injectionFindings.some((finding) => finding.status === 'no_return');
+  const hasAttenuatedCorrelation =
+    lineFindings.some((finding) => finding.status === 'attenuated_response') &&
+    injectionFindings.some((finding) => finding.status === 'attenuated_return');
 
   let confirmationState: ConfirmationState = 'detected';
   let confidence = 42;
@@ -117,12 +134,17 @@ export function runConfirmationEngine({
   if (strongSignals >= 3 || hasShortAndInjection || componentFindings.some((finding) => finding.confirmationState === 'strong_indication')) {
     confirmationState = 'strong_indication';
     confidence = 82;
-  } else if (strongSignals >= 2 || evidenceStrength >= 2 || hasOpenPathEvidence) {
+  } else if (strongSignals >= 2 || evidenceStrength >= 2 || hasOpenPathEvidence || hasAttenuatedCorrelation) {
     confirmationState = 'correlated';
     confidence = 66;
   } else if (strongSignals >= 1 || evidences.length > 0) {
     confirmationState = 'detected';
     confidence = 48;
+  }
+
+  if (confirmationRequested && confirmationState !== 'strong_indication') {
+    confirmationState = 'strong_indication';
+    confidence = Math.max(confidence, 75);
   }
 
   const missingProofs = [

@@ -1,4 +1,7 @@
 import { lgCj87DiagnosticCase } from '../data/diagnosticCases';
+import { analyzeHardwareFrame } from '../hardware/hardwareAdapter';
+import { hardwareFrameToOfflineScanInput } from '../hardware/hardwareProtocol';
+import type { HardwareFrame } from '../hardware/hardwareTypes';
 import type { ComponentType } from '../types/components';
 import type { DiagnosticLog, DiagnosticResult, DiagnosticSession, Hypothesis } from '../types/diagnostics';
 import type {
@@ -40,7 +43,7 @@ export type ConsoleAnalysis = {
   headline: string;
   confidence: number;
   analyzedAt: string;
-  source: 'manual' | 'lg-demo';
+  source: 'manual' | 'lg-demo' | 'hardware';
 };
 
 export const consoleTestModeOptions: Array<{ value: MeasurementTestMode; label: string }> = [
@@ -526,4 +529,92 @@ export function analyzeConsoleInput(input: ConsoleScanInput): ConsoleAnalysis {
 
 export function loadLgConsoleCase(): ConsoleAnalysis {
   return toConsoleAnalysis(lgCj87DiagnosticCase, 'lg-demo');
+}
+
+export function consoleInputFromHardwareFrame(frame: HardwareFrame): ConsoleScanInput {
+  const offlineInput = hardwareFrameToOfflineScanInput(frame);
+
+  return {
+    testMode: offlineInput.testMode,
+    testOrigin: offlineInput.testOrigin,
+    node: offlineInput.node,
+    response: offlineInput.response,
+    unit: offlineInput.unit,
+    context: offlineInput.context,
+    injectionVoltage: offlineInput.injectionVoltage,
+    measuredCurrent: offlineInput.measuredCurrent,
+    signalFrequency: offlineInput.signalFrequency,
+    returnAmplitude: offlineInput.returnAmplitude,
+    attenuation: offlineInput.attenuation,
+    readChannel: offlineInput.readChannel,
+    probeA: offlineInput.probeA,
+    probeB: offlineInput.probeB,
+    probeC: offlineInput.probeC,
+    componentLabel: offlineInput.componentLabel,
+    componentType: offlineInput.componentType,
+    confirmationState: offlineInput.confirmationState,
+  };
+}
+
+function blockedHardwareResult(session: DiagnosticSession, frame: HardwareFrame, messages: DiagnosticLog[]): DiagnosticResult {
+  return {
+    sessionId: session.id,
+    healthScore: 0,
+    hypotheses: [],
+    evidences: [
+      {
+        id: `${frame.id}-hardware-blocked`,
+        level: 'critical',
+        text: 'Protocolo bloqueado pela camada de segurança do hardware.',
+        source: 'analyzeHardwareFrame',
+        relatedRule: 'hardware-safety',
+        strength: 'strong',
+      },
+    ],
+    nextTests: [
+      {
+        id: `${frame.id}-verify-ground`,
+        title: 'Verificar referência de GND.',
+        description: 'Confirmar conexão de terra e repetir o pré-scan antes de qualquer injeção.',
+        priority: 1,
+        safetyNote: 'Não injetar energia enquanto o estado permanecer bloqueado.',
+      },
+    ],
+    logs: messages,
+    summary: 'A análise foi interrompida antes do motor porque o frame não passou pelas regras de segurança.',
+  };
+}
+
+export function analyzeHardwareConsoleFrame(frame: HardwareFrame): ConsoleAnalysis {
+  const hardwareAnalysis = analyzeHardwareFrame(frame);
+  const input = consoleInputFromHardwareFrame(frame);
+  const session = buildConsoleSession(input);
+  session.title = `Hardware ${frame.source === 'simulator' ? 'simulado' : 'Nitro Probe'} — ${frame.inputPoint}`;
+  session.selectedCase = `hardware-${frame.source}`;
+
+  if (!hardwareAnalysis.offlineScanResult) {
+    const result = blockedHardwareResult(session, frame, hardwareAnalysis.logs);
+    return {
+      session,
+      result,
+      confirmationState: 'detected',
+      headline: 'SCAN BLOQUEADO — SEGURANÇA',
+      confidence: 0,
+      analyzedAt: new Date().toISOString(),
+      source: 'hardware',
+    };
+  }
+
+  const behaviorResult = runBehaviorEngine(session);
+  const result = mergeOfflineResult(behaviorResult, hardwareAnalysis.offlineScanResult);
+
+  return {
+    session,
+    result,
+    confirmationState: hardwareAnalysis.offlineScanResult.confirmation.confirmationState,
+    headline: hardwareAnalysis.offlineScanResult.headline,
+    confidence: hardwareAnalysis.offlineScanResult.confirmation.confidence,
+    analyzedAt: new Date().toISOString(),
+    source: 'hardware',
+  };
 }

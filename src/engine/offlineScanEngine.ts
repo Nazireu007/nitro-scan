@@ -1,10 +1,12 @@
 import type { DiagnosticLog, Evidence, NextTest } from '../types/diagnostics';
+import type { ComponentType } from '../types/components';
 import type { LineFinding, OfflineScanInput, OfflineScanResult } from '../types/offlineScan';
 import { parseNumericValue } from '../utils/electrical';
 import { runComponentDiagnosis } from './componentDiagnosis';
 import { runConfirmationEngine } from './confirmationEngine';
 import { runConnectorScan } from './connectorScanEngine';
 import { analyzeInjectionResponse, type InjectionResponseFinding } from './injectionResponseAnalyzer';
+import { verdictHeadline, verdictStatusFromState, verdictSummary } from './verdictPresentation';
 
 function normalizeText(value: string | undefined): string {
   return String(value ?? '')
@@ -208,7 +210,7 @@ function lineFindingTests(input: OfflineScanInput, findings: LineFinding[]): Nex
           1,
           'Começar com baixa tensão e corrente limitada.',
         ),
-        nextTest(`${input.id}-isolate-load`, 'Isolar carga/componente.', 'Separar o setor suspeito e repetir resistência da linha.', 1),
+        nextTest(`${input.id}-isolate-load`, 'Isolar carga/componente.', 'Separar o setor em teste e repetir resistência da linha.', 1),
       ];
     }
 
@@ -267,62 +269,45 @@ function lineFindingLogs(input: OfflineScanInput, findings: LineFinding[]): Diag
 function confirmationEvidence(input: OfflineScanInput, result: OfflineScanResult['confirmation']): Evidence[] {
   if (result.confirmationState === 'confirmed') {
     return [
-      evidence(`${input.id}-confirmation-proof`, 'success', 'Diagnóstico confirmado por prova elétrica.', 'strong'),
+      evidence(`${input.id}-confirmation-proof`, 'success', 'Veredito confirmado por prova elétrica.', 'strong'),
     ];
   }
 
   return result.missingProofs.slice(0, 2).map((proof, index) =>
-    evidence(`${input.id}-missing-proof-${index}`, 'info', `Prova pendente: ${proof}`, 'weak'),
+    evidence(`${input.id}-missing-proof-${index}`, 'info', `Prova necessária: ${proof}`, 'weak'),
   );
-}
-
-function stateLabel(state: OfflineScanResult['confirmation']['confirmationState']): string {
-  if (state === 'confirmed') return 'CONFIRMADO';
-  if (state === 'strong_indication') return 'FORTE INDÍCIO';
-  if (state === 'correlated') return 'CORRELACIONADO';
-  return 'DETECTADO';
 }
 
 function findingHeadline(result: OfflineScanResult, input: OfflineScanInput): string {
   const line = result.lineFindings[0];
   const component = result.componentFindings.find((finding) => finding.componentType !== 'unknown_ic') ?? result.componentFindings[0];
-  const prefix = stateLabel(result.confirmation.confirmationState);
+  const status = verdictStatusFromState(result.confirmation.confirmationState);
 
   if (result.confirmation.confirmationState === 'confirmed') {
-    if (component) return `DIAGNÓSTICO CONFIRMADO — ${component.componentLabel.toUpperCase()}`;
-    return `DIAGNÓSTICO CONFIRMADO — ${line?.lineName.toUpperCase() || 'PROVA ELÉTRICA'}`;
+    const componentDefects: Partial<Record<ComponentType, string>> = {
+      capacitor: 'CAPACITOR CERÂMICO EM CURTO',
+      mosfet: 'MOSFET D-S EM CURTO',
+      diode: 'DIODO EM CURTO',
+      inductor: 'BOBINA ABERTA',
+      ldo: 'LDO/CI EM CURTO',
+    };
+    const defect = component ? componentDefects[component.componentType] : undefined;
+    if (defect) return verdictHeadline(status, defect);
+    if (hasAny(sourceText(input), ['linha normalizou', 'curto sumiu', 'normalizou apos isolar', 'normalizou após isolar'])) {
+      return verdictHeadline(status, 'LINHA NORMALIZOU APÓS ISOLAMENTO');
+    }
+    if (line?.status === 'open_path' || line?.status === 'no_return_signal') return verdictHeadline(status, 'CAMINHO ABERTO');
+    return verdictHeadline(status, line?.lineName.toUpperCase() || 'PROVA ELÉTRICA REGISTRADA');
   }
-
-  if (component && component.componentType !== 'unknown_ic') return `${prefix} — ${component.componentLabel.toUpperCase()}`;
-
-  if (!line) return `${prefix} — PADRÃO EM ANÁLISE`;
-
-  const titles: Record<LineFinding['status'], string> = {
-    normal: 'RESPOSTA NORMAL',
-    low_impedance: 'BAIXA IMPEDÂNCIA',
-    short_detected: 'LINHA EM CURTO',
-    open_path: 'CAMINHO ABERTO',
-    attenuated_response: 'RETORNO ATENUADO',
-    abnormal_load: 'CARGA ANORMAL',
-    no_return_signal: 'RETORNO AUSENTE',
-  };
-
-  return `${prefix} — ${titles[line.status]} EM ${line.lineName.toUpperCase()}`;
+  return verdictHeadline(status);
 }
 
 function buildSummary(result: OfflineScanResult): string {
-  if (result.confirmation.confirmationState === 'confirmed') {
-    return `${result.confirmation.reasons[0] ?? 'Diagnóstico confirmado por prova elétrica.'} O estado foi fechado sem depender de chute.`;
-  }
-
-  if (result.confirmation.missingProofs.length === 0) {
-    return result.confirmation.reasons[0] ?? 'Resposta elétrica registrada como referência.';
-  }
-
-  const missing = result.confirmation.missingProofs[0] ?? 'Executar prova elétrica de fechamento.';
-  const reason = result.confirmation.reasons[0] ?? 'Achado inicial detectado pelo scan offline.';
-
-  return `${reason} Prova pendente: ${missing}`;
+  const status = verdictStatusFromState(result.confirmation.confirmationState);
+  const detail = status === 'confirmed'
+    ? `Prova: ${result.confirmation.reasons[0] ?? 'fechamento elétrico registrado.'}`
+    : `Prova necessária: ${result.confirmation.missingProofs[0] ?? 'executar teste elétrico de fechamento.'}`;
+  return verdictSummary(status, detail);
 }
 
 export function runOfflineScan(input: OfflineScanInput): OfflineScanResult {
@@ -370,9 +355,9 @@ export function runOfflineScan(input: OfflineScanInput): OfflineScanResult {
     ...injection.logs,
     ...component.logs,
     ...(confirmation.confirmationState === 'confirmed'
-      ? [log('AI', 'Diagnóstico confirmado por prova elétrica.')]
+      ? [log('AI', 'Veredito confirmado por prova elétrica.')]
       : confirmation.missingProofs.length > 0
-        ? [log('TEST', 'Prova de isolamento pendente.')]
+        ? [log('TEST', 'Sem veredito fechado. Prova necessária para confirmar.')]
         : [log('SCAN', 'Resposta elétrica normal registrada como referência.')]),
   ];
   const result: OfflineScanResult = {

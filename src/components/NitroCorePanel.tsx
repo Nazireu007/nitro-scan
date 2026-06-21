@@ -1,23 +1,23 @@
 import { Activity, Gauge, Radio, ShieldCheck } from 'lucide-react';
-import type { ConfirmationState } from '../types/measurements';
+import type { VerdictStatus } from '../engine/verdictPresentation';
 
 type NitroCorePanelProps = {
   confidence: number;
   events: number;
   health: number;
-  state: ConfirmationState;
+  status: VerdictStatus;
 };
 
-const stateLabels: Record<ConfirmationState, string> = {
-  detected: 'Detectado',
-  correlated: 'Correlacionado',
-  strong_indication: 'Forte indício',
-  confirmed: 'Confirmado',
+const stateLabels: Record<VerdictStatus, string> = {
+  open: 'Sem veredito',
+  line_failure: 'Falha na linha',
+  confirmed: 'Veredito fechado',
+  blocked: 'Teste bloqueado',
 };
 
-export function NitroCorePanel({ confidence, events, health, state }: NitroCorePanelProps) {
+export function NitroCorePanel({ confidence, events, health, status }: NitroCorePanelProps) {
   return (
-    <section className={`console-core-panel nitro-core-${state}`} aria-label="Núcleo Nitro">
+    <section className={`console-core-panel nitro-core-${status}`} aria-label="Núcleo Nitro">
       <div className="nitro-core-visual">
         <span className="nitro-core-halo" aria-hidden="true" />
         <span className="nitro-core-orbit nitro-core-orbit-a" aria-hidden="true" />
@@ -108,7 +108,7 @@ export function NitroCorePanel({ confidence, events, health, state }: NitroCoreP
         <div>
           <Radio aria-hidden="true" />
           <span>Estado</span>
-          <strong>{stateLabels[state]}</strong>
+          <strong>{stateLabels[status]}</strong>
         </div>
       </div>
     </section>

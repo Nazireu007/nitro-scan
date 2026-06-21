@@ -121,11 +121,11 @@ export function NitroConsole() {
 
   async function toggleSerialConnection() {
     const connected = connectionState.status === 'connected' || connectionState.status === 'reading';
-    setHardwareNotice(connected ? 'Encerrando conexão com Nitro Probe...' : 'Aguardando seleção da porta serial...');
+    setHardwareNotice(connected ? 'Encerrando conexão com Nitro Box...' : 'Aguardando seleção da porta serial...');
     const nextState = connected ? await connectionManager.disconnect() : await connectionManager.connect();
     setConnectionState(nextState);
     setUsingSimulator(false);
-    setHardwareNotice(nextState.lastError ?? (nextState.status === 'connected' ? 'Nitro Probe conectado via Web Serial.' : directSerialGuidance(capabilities)));
+    setHardwareNotice(nextState.lastError ?? (nextState.status === 'connected' ? 'Nitro Box conectada via Web Serial.' : directSerialGuidance(capabilities)));
   }
 
   async function oneClickScan() {
@@ -169,14 +169,14 @@ export function NitroConsole() {
 
   async function emergencyStop() {
     const result = await connectionManager.sendCommand(createEmergencyStopCommand(input.node.trim() || 'VIN'));
-    setHardwareNotice(result.sent ? 'Parada de emergência enviada ao Nitro Probe.' : result.message);
+    setHardwareNotice(result.sent ? 'Parada de emergência enviada à Nitro Box.' : result.message);
     setConnectionState(connectionManager.getState());
   }
 
   const serialConnected = connectionState.status === 'connected' || connectionState.status === 'reading';
   const serialSupported = connectionState.status !== 'unsupported';
   const hardwareStatus = serialConnected
-    ? 'Nitro Probe conectado'
+    ? 'Nitro Box conectada'
     : capabilities.isMobile
       ? 'Modo mobile / simulação ativa'
       : usingSimulator
@@ -199,7 +199,7 @@ export function NitroConsole() {
                 confidence={analysis.confidence}
                 events={analysis.result.logs.length}
                 health={analysis.result.healthScore}
-                state={analysis.confirmationState}
+                status={analysis.verdictStatus}
               />
             </div>
             <ScanResultPanel analysis={analysis} />

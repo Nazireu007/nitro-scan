@@ -665,7 +665,8 @@
   font-size: 0.56rem;
 }
 
-.nitro-core-strong_indication {
+.nitro-core-open,
+.nitro-core-line_failure {
   --core-accent: var(--console-amber);
   --core-secondary: var(--console-magenta);
 }
@@ -673,6 +674,11 @@
 .nitro-core-confirmed {
   --core-accent: var(--console-green);
   --core-secondary: var(--console-cyan);
+}
+
+.nitro-core-blocked {
+  --core-accent: var(--console-red);
+  --core-secondary: var(--console-amber);
 }
 
 .scan-result-panel {
@@ -686,12 +692,17 @@
   background: rgba(4, 11, 24, 0.94);
 }
 
-.scan-result-strong_indication {
+.scan-result-open,
+.scan-result-line_failure {
   --result-accent: var(--console-amber);
 }
 
 .scan-result-confirmed {
   --result-accent: var(--console-green);
+}
+
+.scan-result-blocked {
+  --result-accent: var(--console-red);
 }
 
 .scan-result-panel > header {
@@ -744,7 +755,7 @@
   line-height: 1.42;
 }
 
-.scan-hypothesis-list {
+.scan-verdict-readings {
   display: grid;
   grid-column: 2;
   grid-row: 1 / span 3;
@@ -754,7 +765,7 @@
   padding-left: 1rem;
 }
 
-.scan-hypothesis-list > div {
+.scan-verdict-readings > div {
   display: grid;
   min-width: 0;
   grid-template-columns: minmax(0, 1fr) 4.4rem auto;
@@ -762,7 +773,7 @@
   align-items: center;
 }
 
-.scan-hypothesis-list span {
+.scan-verdict-readings span {
   overflow: hidden;
   color: #b9d0de;
   font-size: 0.62rem;
@@ -771,21 +782,21 @@
   white-space: nowrap;
 }
 
-.scan-hypothesis-list i {
+.scan-verdict-readings i {
   display: block;
   height: 3px;
   overflow: hidden;
   background: rgba(148, 163, 184, 0.12);
 }
 
-.scan-hypothesis-list i b {
+.scan-verdict-readings i b {
   display: block;
   height: 100%;
   background: linear-gradient(90deg, var(--console-cyan), var(--console-violet), var(--console-magenta));
   box-shadow: 0 0 8px rgba(34, 223, 255, 0.46);
 }
 
-.scan-hypothesis-list strong {
+.scan-verdict-readings strong {
   color: #e8f8ff;
   font-size: 0.62rem;
   font-weight: 950;
@@ -1520,11 +1531,11 @@
 
   .scan-result-panel h2,
   .scan-result-panel > p,
-  .scan-hypothesis-list {
+  .scan-verdict-readings {
     grid-column: 1;
   }
 
-  .scan-hypothesis-list {
+  .scan-verdict-readings {
     grid-row: auto;
     margin-top: 0.32rem;
     border-top: 1px solid rgba(34, 223, 255, 0.12);

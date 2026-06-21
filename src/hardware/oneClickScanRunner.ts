@@ -59,7 +59,7 @@ const stepLogs: Partial<Record<OneClickScanStep, string>> = {
   low_injection: 'Injeção baixa autorizada.',
   sine_response: 'Resposta senoidal capturada.',
   response_analysis: 'Resposta elétrica enviada ao motor de análise.',
-  component_correlation: 'Evidências correlacionadas com componentes e regiões prováveis.',
+  component_correlation: 'Evidências registradas. Prova de fechamento ainda necessária.',
   confirmation_check: 'Protocolo de confirmação executado.',
   completed: 'One-Click Board Scan concluído.',
 };
@@ -160,7 +160,7 @@ export async function runOneClickBoardScan(options: OneClickBoardScanOptions): P
       const sent = await options.sendCommand(item.command);
       if (!sent.sent) return stop(sent.message, false);
       const frame = await options.readFrame();
-      if (!frame) return stop('Nitro Probe não retornou frame para a etapa atual.', false);
+      if (!frame) return stop('Nitro Box não retornou frame para a etapa atual.', false);
       receive(frame);
       const stopped = await checkSafety(frame);
       if (stopped) return stopped;
@@ -174,9 +174,9 @@ export async function runOneClickBoardScan(options: OneClickBoardScanOptions): P
   move('component_correlation');
   move('confirmation_check');
   if (analysis.offlineScanResult?.confirmation.confirmationState === 'confirmed') {
-    emitLog('Diagnóstico confirmado por prova elétrica.', 'AI');
+    emitLog('Veredito confirmado por prova elétrica.', 'AI');
   } else {
-    emitLog('Prova de confirmação pendente.', 'TEST');
+    emitLog('Sem veredito fechado. Prova necessária para confirmar.', 'TEST');
   }
   move('completed');
 

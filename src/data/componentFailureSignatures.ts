@@ -19,7 +19,7 @@ export const componentFailureSignatures: ComponentFailureSignature[] = [
     correlatedPatterns: ['linha para gnd baixa', 'corrente alta', 'baixa impedância', 'aquecimento localizado'],
     confirmationPatterns: ['remoção normaliza', 'remocao normaliza', 'linha normalizou', 'curto sumiu', 'após remover capacitor'],
     suspects: ['capacitor cerâmico em curto', 'capacitor de desacoplamento', 'capacitor na linha alimentada'],
-    nextTests: ['Manter injeção limitada e localizar aquecimento.', 'Remover o capacitor suspeito e repetir leitura.', 'Comparar resistência da linha após isolamento.'],
+    nextTests: ['Manter injeção limitada e localizar aquecimento.', 'Remover o capacitor em teste e repetir leitura.', 'Comparar resistência da linha após isolamento.'],
   },
   {
     id: 'diode-short',

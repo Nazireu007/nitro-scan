@@ -13,6 +13,7 @@ const diagnosticCases: Array<{ scenario: HardwareSimulationScenario; expected: C
   { scenario: 'normal_line', expected: 'detected' },
   { scenario: 'shorted_line', expected: 'strong_indication' },
   { scenario: 'open_path', expected: 'correlated' },
+  { scenario: 'attenuated_return', expected: 'correlated' },
   { scenario: 'mosfet_ds_low', expected: 'strong_indication' },
   { scenario: 'capacitor_confirmed', expected: 'confirmed' },
   { scenario: 'line_normalized_after_isolation', expected: 'confirmed' },

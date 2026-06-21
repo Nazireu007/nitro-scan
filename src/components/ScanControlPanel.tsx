@@ -93,7 +93,7 @@ export function ScanControlPanel({
       </header>
 
       <form className="scan-control-form" onSubmit={submit}>
-        <section className="hardware-runtime-panel" aria-label="Conexão com Nitro Probe" aria-live="polite">
+        <section className="hardware-runtime-panel" aria-label="Conexão com Nitro Box" aria-live="polite">
           <div className="hardware-runtime-status">
             <i aria-hidden="true" />
             <span>Hardware: {hardwareStatus}</span>
@@ -110,7 +110,7 @@ export function ScanControlPanel({
             <button type="button" onClick={onToggleSerial} disabled={!serialSupported}>
               <Usb aria-hidden="true" />
               {serialSupported
-                ? serialConnected ? 'Desconectar Nitro Probe' : 'Conectar Nitro Probe'
+                ? serialConnected ? 'Desconectar Nitro Box' : 'Conectar Nitro Box'
                 : 'Conexão direta indisponível neste navegador'}
             </button>
           </div>

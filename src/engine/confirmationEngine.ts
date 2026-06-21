@@ -49,10 +49,9 @@ function confirmationTest(id: string, title: string, description: string, priori
 }
 
 function stateLabel(state: ConfirmationState): string {
-  if (state === 'confirmed') return 'CONFIRMADO';
-  if (state === 'strong_indication') return 'FORTE INDÍCIO';
-  if (state === 'correlated') return 'CORRELACIONADO';
-  return 'DETECTADO';
+  if (state === 'confirmed') return 'Veredito confirmado';
+  if (state === 'correlated') return 'Falha comprovada na linha';
+  return 'Sem veredito fechado';
 }
 
 export function runConfirmationEngine({
@@ -94,17 +93,32 @@ export function runConfirmationEngine({
       'resposta antes/depois provou interrupção',
       'comparacao antes/depois confirmou',
       'comparação antes/depois confirmou',
+      'componente removido e leitura normalizou',
+      'setor isolado e curto sumiu',
+      'isolamento confirmou normalizacao',
+      'isolamento confirmou normalização',
     ]);
   const hasLocalizedThermalProof =
     hasAny(source, ['aquecimento localizado']) &&
     hasAny(source, ['injecao limitada', 'injeção limitada', 'baixa injecao', 'baixa injeção']) &&
     Boolean(input.componentLabel || input.componentType);
+  const hasDiodeProof =
+    hasAny(source, ['diodo conduz nos dois sentidos']) &&
+    hasAny(source, ['queda confirmou curto', 'queda proxima de 0', 'queda próxima de 0']);
+  const hasVisualProof = hasAny(source, [
+    'evidencia visual confirmada',
+    'evidência visual confirmada',
+    'microscopio confirmou',
+    'microscópio confirmou',
+  ]);
   const confirmedComponent = componentFindings.find((finding) => finding.confirmationState === 'confirmed');
 
-  if (hasClosureProof || hasLocalizedThermalProof || confirmedComponent) {
+  if (hasClosureProof || hasLocalizedThermalProof || hasDiodeProof || hasVisualProof || confirmedComponent) {
     const reasons = [
-      hasClosureProof ? 'Linha normalizou ou o caminho foi fechado após isolamento/remoção do setor suspeito.' : undefined,
+      hasClosureProof ? 'Linha normalizou ou o caminho foi fechado após isolamento/remoção do setor em teste.' : undefined,
       hasLocalizedThermalProof ? 'Aquecimento localizado durante injeção limitada fechou prova elétrica no componente indicado.' : undefined,
+      hasDiodeProof ? 'Condução nos dois sentidos e queda próxima de zero confirmaram curto no diodo.' : undefined,
+      hasVisualProof ? 'Evidência visual registrada pelo técnico fechou o diagnóstico.' : undefined,
       confirmedComponent ? `${confirmedComponent.componentLabel} possui confirmação por prova elétrica.` : undefined,
     ].filter((reason): reason is string => Boolean(reason));
 
@@ -170,7 +184,7 @@ export function runConfirmationEngine({
     nextConfirmationTests: [
       confirmationTest(
         `${input.id}-confirmation-isolate`,
-        'Isolar setor suspeito e repetir leitura.',
+        'Isolar setor em teste e repetir leitura.',
         'Separar carga ou componente indicado e confirmar se a linha muda de estado.',
         1,
       ),

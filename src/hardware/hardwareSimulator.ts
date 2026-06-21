@@ -209,7 +209,7 @@ export function simulateLineNormalizedAfterIsolation(): HardwareFrame {
   return simulatorFrame({
     scanMode: 'confirmation', inputPoint: '5 V', impedanceOhms: 85, injectionVoltage: 0.5,
     measuredCurrent: 0.02, signalFrequency: 1000, returnAmplitude: 96, attenuation: 'baixa', safetyState: 'safe_to_inject',
-    metadata: { context: 'prova elétrica antes/depois; setor suspeito isolado', response: 'linha normalizou após isolar componente', testOrigin: 'probe', confirmationState: 'confirmed', preScanCompleted: true },
+    metadata: { context: 'prova elétrica antes/depois; setor em teste isolado', response: 'linha normalizou após isolar componente', testOrigin: 'probe', confirmationState: 'confirmed', preScanCompleted: true },
   });
 }
 

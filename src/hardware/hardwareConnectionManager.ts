@@ -48,7 +48,7 @@ export function createHardwareConnectionManager() {
     }
     return update({
       status: 'connected',
-      portLabel: 'Nitro Probe / Web Serial',
+      portLabel: 'Nitro Box / Web Serial',
       connectedAt: new Date().toISOString(),
       lastError: undefined,
     });

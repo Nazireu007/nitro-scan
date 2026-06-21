@@ -14,6 +14,13 @@ import type {
 import type { LineFinding, OfflineScanInput, OfflineScanResult } from '../types/offlineScan';
 import { runBehaviorEngine } from './behaviorEngine';
 import { runOfflineScan } from './offlineScanEngine';
+import {
+  neutralizeDiagnosticText,
+  presentDiagnosticResult,
+  verdictHeadline,
+  verdictStatusFromState,
+  type VerdictStatus,
+} from './verdictPresentation';
 
 export type ConsoleScanInput = {
   testMode: MeasurementTestMode;
@@ -45,6 +52,7 @@ export type ConsoleAnalysis = {
   confidence: number;
   analyzedAt: string;
   source: 'manual' | 'lg-demo' | 'hardware';
+  verdictStatus: VerdictStatus;
 };
 
 export const consoleTestModeOptions: Array<{ value: MeasurementTestMode; label: string }> = [
@@ -493,28 +501,27 @@ function cleanHypothesisTitle(value: string): string {
 
 function buildHeadline(result: DiagnosticResult, state: ConfirmationState): string {
   if (result.evidences.some((evidence) => evidence.id === 'manual-insufficient-measurements')) {
-    return 'LEITURA INSUFICIENTE';
+    return verdictHeadline('open');
   }
 
   const hypothesis = primaryHypothesis(result);
-  if (!hypothesis) return 'PADRÃO NÃO CONCLUSIVO';
+  if (!hypothesis) return verdictHeadline(verdictStatusFromState(state));
 
-  const title = cleanHypothesisTitle(hypothesis.title).toUpperCase();
-  const prefix: Record<ConfirmationState, string> = {
-    detected: 'DETECTADO',
-    correlated: 'CORRELACIONADO',
-    strong_indication: 'FORTE INDÍCIO',
-    confirmed: 'CONFIRMADO',
-  };
-
-  return `${prefix[state]} — ${title}`;
+  const status = verdictStatusFromState(state);
+  const title = neutralizeDiagnosticText(cleanHypothesisTitle(hypothesis.title)).toUpperCase();
+  return verdictHeadline(status, status === 'confirmed' ? title : undefined);
 }
 
 function toConsoleAnalysis(session: DiagnosticSession, source: ConsoleAnalysis['source'], input?: ConsoleScanInput): ConsoleAnalysis {
   const behaviorResult = runBehaviorEngine(session);
   const offlineResult = input && hasConsoleScanInput(input) ? runOfflineScan(buildOfflineScanInput(input, session)) : undefined;
-  const result = offlineResult ? mergeOfflineResult(behaviorResult, offlineResult) : behaviorResult;
-  const confirmationState = offlineResult?.confirmation.confirmationState ?? resolveConfirmation(session, result);
+  const rawResult = offlineResult ? mergeOfflineResult(behaviorResult, offlineResult) : behaviorResult;
+  const confirmationState = offlineResult?.confirmation.confirmationState ?? resolveConfirmation(session, rawResult);
+  const verdictStatus = verdictStatusFromState(confirmationState);
+  const proofOrPending = verdictStatus === 'confirmed'
+    ? `Prova: ${rawResult.evidences.find((item) => item.id.includes('confirmation-proof'))?.text ?? rawResult.summary}`
+    : `Prova necessária: ${rawResult.nextTests[0]?.title ?? 'executar teste elétrico de fechamento.'}`;
+  const result = presentDiagnosticResult(rawResult, verdictStatus, proofOrPending);
 
   return {
     session,
@@ -524,6 +531,7 @@ function toConsoleAnalysis(session: DiagnosticSession, source: ConsoleAnalysis['
     confidence: offlineResult?.confirmation.confidence ?? primaryHypothesis(result)?.confidence ?? 0,
     analyzedAt: new Date().toISOString(),
     source,
+    verdictStatus,
   };
 }
 
@@ -594,34 +602,40 @@ export function analyzeHardwareConsoleFrame(frame: HardwareFrame): ConsoleAnalys
   const hardwareAnalysis = analyzeHardwareFrame(frame);
   const input = consoleInputFromHardwareFrame(frame);
   const session = buildConsoleSession(input);
-  session.title = `Hardware ${frame.source === 'simulator' ? 'simulado' : 'Nitro Probe'} — ${frame.inputPoint}`;
+  session.title = `Hardware ${frame.source === 'simulator' ? 'simulado' : 'Nitro Box'} — ${frame.inputPoint}`;
   session.selectedCase = `hardware-${frame.source}`;
 
   if (!hardwareAnalysis.offlineScanResult) {
-    const result = blockedHardwareResult(session, frame, hardwareAnalysis.logs);
+    const result = presentDiagnosticResult(blockedHardwareResult(session, frame, hardwareAnalysis.logs), 'blocked');
     return {
       session,
       result,
       confirmationState: 'detected',
-      headline: hardwareAnalysis.safety.state === 'emergency_stop'
-        ? 'EMERGÊNCIA — CORRENTE ACIMA DO LIMITE'
-        : 'SCAN BLOQUEADO — SEGURANÇA',
+      headline: verdictHeadline('blocked'),
       confidence: 0,
       analyzedAt: new Date().toISOString(),
       source: 'hardware',
+      verdictStatus: 'blocked',
     };
   }
 
   const behaviorResult = runBehaviorEngine(session);
-  const result = mergeOfflineResult(behaviorResult, hardwareAnalysis.offlineScanResult);
+  const rawResult = mergeOfflineResult(behaviorResult, hardwareAnalysis.offlineScanResult);
+  const confirmationState = hardwareAnalysis.offlineScanResult.confirmation.confirmationState;
+  const verdictStatus = verdictStatusFromState(confirmationState);
+  const proofOrPending = verdictStatus === 'confirmed'
+    ? `Prova: ${rawResult.evidences.find((item) => item.id.includes('confirmation-proof'))?.text ?? rawResult.summary}`
+    : `Prova necessária: ${rawResult.nextTests[0]?.title ?? 'executar teste elétrico de fechamento.'}`;
+  const result = presentDiagnosticResult(rawResult, verdictStatus, proofOrPending);
 
   return {
     session,
     result,
-    confirmationState: hardwareAnalysis.offlineScanResult.confirmation.confirmationState,
+    confirmationState,
     headline: hardwareAnalysis.offlineScanResult.headline,
     confidence: hardwareAnalysis.offlineScanResult.confirmation.confidence,
     analyzedAt: new Date().toISOString(),
     source: 'hardware',
+    verdictStatus,
   };
 }

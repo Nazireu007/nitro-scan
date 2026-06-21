@@ -72,7 +72,7 @@ export function getSerialBridgeState(): SerialBridgeState {
     supported,
     connected: activePort !== null,
     status: activePort ? 'connected' : 'disconnected',
-    message: activePort ? 'Nitro Probe conectado via Web Serial.' : 'Serial disponível. Selecione a porta do Nitro Probe.',
+    message: activePort ? 'Nitro Box conectada via Web Serial.' : 'Serial disponível. Selecione a porta da Nitro Box.',
   };
 }
 
@@ -123,7 +123,7 @@ export async function disconnectSerial(): Promise<SerialBridgeState> {
     supported,
     connected: false,
     status: supported ? 'disconnected' : 'unavailable',
-    message: supported ? 'Nitro Probe desconectado.' : 'Conexão direta indisponível neste navegador',
+    message: supported ? 'Nitro Box desconectada.' : 'Conexão direta indisponível neste navegador',
   };
 }
 
@@ -145,7 +145,7 @@ export async function readSerialFrame(raw?: unknown): Promise<HardwareFrame | nu
 
 export function readSerialFrames(onFrame: SerialFrameHandler, onError: SerialErrorHandler): StopSerialReading {
   if (!activePort?.readable || activeReader) {
-    queueMicrotask(() => onError(new Error('Nitro Probe não conectado ou leitura serial já ativa.')));
+    queueMicrotask(() => onError(new Error('Nitro Box não conectada ou leitura serial já ativa.')));
     return async () => undefined;
   }
 
@@ -159,7 +159,7 @@ export function readSerialFrames(onFrame: SerialFrameHandler, onError: SerialErr
       while (!stopped) {
         const { value, done } = await reader.read();
         if (done) {
-          if (!stopped) onError(new Error('Conexão serial encerrada pelo Nitro Probe.'));
+          if (!stopped) onError(new Error('Conexão serial encerrada pela Nitro Box.'));
           break;
         }
         serialBuffer += decoder.decode(value, { stream: true });
@@ -201,13 +201,13 @@ export function readSerialFrames(onFrame: SerialFrameHandler, onError: SerialErr
 export async function sendHardwareCommand(command: HardwareCommand): Promise<SerialCommandResult> {
   const payload = `${JSON.stringify(command)}\n`;
   if (!activePort?.writable) {
-    return { sent: false, payload, message: 'Comando preparado; nenhum Nitro Probe conectado.' };
+    return { sent: false, payload, message: 'Comando preparado; nenhuma Nitro Box conectada.' };
   }
 
   const writer = activePort.writable.getWriter();
   try {
     await writer.write(new TextEncoder().encode(payload));
-    return { sent: true, payload, message: `Comando ${command.command} enviado ao Nitro Probe.` };
+    return { sent: true, payload, message: `Comando ${command.command} enviado à Nitro Box.` };
   } catch (error) {
     return { sent: false, payload, message: friendlySerialError(error) };
   } finally {

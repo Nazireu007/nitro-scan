@@ -159,6 +159,9 @@ export function runComponentDiagnosis(
     const confirmationState = confirmationFor(triggered, correlated, confirmed, augmentedSource);
     const componentLabel = inferLabel(input, signature.componentType);
     const status = statusFor(signature.componentType, confirmed, augmentedSource);
+    const verificationText = confirmationState === 'confirmed'
+      ? `Verificação fechada por prova elétrica: ${signature.title}.`
+      : `Verificação registrada em ${componentLabel}. Prova de isolamento ainda necessária.`;
     const componentFinding: ComponentFinding = {
       id: `${input.id}-${signature.id}`,
       componentType: signature.componentType,
@@ -167,12 +170,9 @@ export function runComponentDiagnosis(
       status,
       confidence: confidenceFor(confirmationState),
       confirmationState,
-      evidences: [
-        `${signature.title}: ${componentLabel} correlacionado com ${input.node || 'linha analisada'}.`,
-        ...signature.suspects.slice(0, 2),
-      ],
+      evidences: [verificationText],
       nextTests: signature.nextTests.map((test, index) =>
-        nextTest(`${input.id}-${signature.id}-test-${index}`, test, `${signature.title}. ${test}`, index + 1),
+        nextTest(`${input.id}-${signature.id}-test-${index}`, test, `Verificação de ${componentLabel}. ${test}`, index + 1),
       ),
     };
 
@@ -181,12 +181,12 @@ export function runComponentDiagnosis(
       evidence(
         `${input.id}-${signature.id}-ev`,
         confirmationState === 'confirmed' ? 'success' : confirmationState === 'strong_indication' ? 'critical' : 'warning',
-        `${signature.title}: ${componentLabel} correlacionado com ${input.node || 'linha analisada'}.`,
+        verificationText,
         confirmationState === 'detected' ? 'medium' : 'strong',
       ),
     );
     nextTests.push(...componentFinding.nextTests);
-    logs.push(log(confirmationState === 'confirmed' ? 'AI' : 'WARN', `Diagnóstico de componente: ${signature.title}.`));
+    logs.push(log(confirmationState === 'confirmed' ? 'AI' : 'WARN', `Verificação de componente registrada: ${componentLabel}.`));
   });
 
   if (findings.length === 0 && inferredComponentType && (lineIsShort || hasHighCurrent || hasNoReturn)) {
@@ -201,14 +201,14 @@ export function runComponentDiagnosis(
       status: lineIsShort ? 'short_detected' : hasNoReturn ? 'open_path' : 'inconclusive',
       confidence: confidenceFor(confirmationState),
       confirmationState,
-      evidences: [`${componentLabel} correlacionado com resposta anormal na ${input.node || 'linha analisada'}.`],
+      evidences: [`Verificação registrada em ${componentLabel}. Prova de isolamento ainda necessária.`],
       nextTests: [
         nextTest(`${input.id}-generic-isolate`, 'Isolar componente indicado.', 'Separar o componente e repetir a leitura da linha.', 1),
         nextTest(`${input.id}-generic-before-after`, 'Comparar antes/depois.', 'Registrar a mudança elétrica após isolamento.', 2),
       ],
     });
-    evidences.push(evidence(`${input.id}-generic-component-ev`, 'warning', `${componentLabel} correlacionado com resposta anormal na ${input.node || 'linha analisada'}.`, 'medium'));
-    logs.push(log('WARN', `${componentLabel} correlacionado com resposta anormal.`));
+    evidences.push(evidence(`${input.id}-generic-component-ev`, 'warning', `Verificação registrada em ${componentLabel}. Prova de isolamento ainda necessária.`, 'medium'));
+    logs.push(log('WARN', `Verificação de componente registrada: ${componentLabel}.`));
   }
 
   return {

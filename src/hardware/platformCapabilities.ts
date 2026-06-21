@@ -69,13 +69,13 @@ export function detectPlatformCapabilities(): PlatformCapabilities {
 
 export function directSerialGuidance(capabilities: PlatformCapabilities): string {
   if (capabilities.isMobile) {
-    return 'Modo mobile ativo. Simulador, entrada estruturada e análise offline permanecem disponíveis.';
+    return 'Modo mobile ativo. Simulador, entrada estruturada e análise offline disponíveis.';
   }
   if (!capabilities.isSecureContext) {
     return 'A conexão serial exige HTTPS e um navegador desktop compatível.';
   }
   if (!capabilities.isWebSerialSupported) {
-    return 'Para conexão direta com Nitro Probe, use navegador compatível com Web Serial no desktop.';
+    return 'Conexão direta indisponível neste navegador. Modo simulado/manual ativo.';
   }
-  return 'Web Serial disponível. A porta será escolhida pelo usuário.';
+  return 'Serial disponível. Conecte a Nitro Box quando o hardware estiver pronto.';
 }

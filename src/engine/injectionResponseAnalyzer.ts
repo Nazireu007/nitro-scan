@@ -165,8 +165,8 @@ export function analyzeInjectionResponse(input: OfflineScanInput): InjectionResp
     });
     evidences.push(evidence(`${input.id}-attenuated-return-ev`, 'warning', `Retorno atenuado detectado na ${line}.`, 'medium'));
     nextTests.push(
-      nextTest(`${input.id}-split-load`, 'Isolar carga da linha.', 'Separar a carga suspeita e repetir a leitura de retorno.', 2),
-      nextTest(`${input.id}-intermediate-return`, 'Medir retorno em ponto intermediário.', 'Comparar amplitude antes e depois do setor suspeito.', 2),
+      nextTest(`${input.id}-split-load`, 'Isolar carga da linha.', 'Separar a carga em teste e repetir a leitura de retorno.', 2),
+      nextTest(`${input.id}-intermediate-return`, 'Medir retorno em ponto intermediário.', 'Comparar amplitude antes e depois do setor em teste.', 2),
     );
     logs.push(log('WARN', 'Retorno atenuado detectado.'));
   }
@@ -190,9 +190,9 @@ export function analyzeInjectionResponse(input: OfflineScanInput): InjectionResp
       status: 'line_normalized',
       severity: 'critical',
       confidence: 98,
-      evidences: [`A ${line} normalizou após isolamento ou remoção do setor suspeito.`],
+      evidences: [`A ${line} normalizou após isolamento ou remoção do setor em teste.`],
     });
-    evidences.push(evidence(`${input.id}-line-normalized-ev`, 'success', `A ${line} normalizou após isolamento ou remoção do setor suspeito.`, 'strong'));
+    evidences.push(evidence(`${input.id}-line-normalized-ev`, 'success', `A ${line} normalizou após isolamento ou remoção do setor em teste.`, 'strong'));
     nextTests.push(nextTest(`${input.id}-document-proof`, 'Registrar prova elétrica de fechamento.', 'Documentar medição antes/depois do isolamento para fechar o diagnóstico.', 1));
     logs.push(log('AI', 'Linha normalizou após isolar componente.'));
   }

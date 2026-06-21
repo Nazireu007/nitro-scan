@@ -214,7 +214,7 @@ function translateActionText(value: string): string {
   const exactTranslations: Record<string, string> = {
     'Trace why the main board is not releasing PFC_PCTL during normal boot.':
       'Rastrear por que a placa principal não libera PFC_PCTL durante a inicialização normal.',
-    'Probe crystal/clock activity at the CPU.':
+    'Measure crystal/clock activity at the CPU.':
       'Medir a atividade do cristal/clock na CPU.',
     'Check reset line release during power-on.':
       'Verificar a liberação da linha de reset ao energizar.',
@@ -251,7 +251,7 @@ function translateActionText(value: string): string {
     .replace(/LDO Regulator/g, 'Regulador LDO')
     .replace(/L304 Secondary Rail/g, 'Trilho secundário L304')
     .replace(/Trace/g, 'Rastrear')
-    .replace(/Probe/g, 'Medir')
+    .replace(/Measure/g, 'Medir')
     .replace(/Check/g, 'Verificar')
     .replace(/Capture/g, 'Capturar')
     .replace(/Measure/g, 'Medir')

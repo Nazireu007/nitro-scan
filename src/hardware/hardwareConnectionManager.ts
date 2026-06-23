@@ -7,11 +7,16 @@ import {
   readSerialFrames,
   sendHardwareCommand,
   type SerialCommandResult,
+  type SerialDebugHandler,
   type StopSerialReading,
 } from './serialBridge';
 import type { HardwareCommand, HardwareFrame } from './hardwareTypes';
 
 export type HardwareConnectionStatus = 'unsupported' | 'disconnected' | 'connecting' | 'connected' | 'reading' | 'error';
+
+export const NITRO_PING_TIMEOUT_MESSAGE = 'Nitro Box não respondeu ao ping dentro do tempo esperado.';
+const NITRO_BOOT_DELAY_MS = 2000;
+const NITRO_PING_TIMEOUT_MS = 3000;
 
 export type HardwareConnectionState = {
   status: HardwareConnectionStatus;
@@ -21,6 +26,7 @@ export type HardwareConnectionState = {
   connectedAt?: string;
   framesReceived: number;
   heartbeatActive?: boolean;
+  handshakeConfirmed?: boolean;
 };
 
 export type HardwareCommunicationTestResult = {
@@ -28,6 +34,17 @@ export type HardwareCommunicationTestResult = {
   message: string;
   frame?: HardwareFrame;
 };
+
+export type HardwareConnectOptions = {
+  onFrame?: (frame: HardwareFrame) => void;
+  onError?: (error: Error) => void;
+  onLog?: (message: string) => void;
+  onDebug?: SerialDebugHandler;
+};
+
+export function isNitroBoxPongFrame(frame: HardwareFrame): boolean {
+  return frame.event === 'pong' && frame.hardware === 'Nitro Box' && frame.status === 'online';
+}
 
 export type HardwareConnectionManager = ReturnType<typeof createHardwareConnectionManager>;
 
@@ -37,12 +54,14 @@ export function createHardwareConnectionManager() {
     status: initialBridge.supported ? 'disconnected' : 'unsupported',
     framesReceived: 0,
     heartbeatActive: false,
+    handshakeConfirmed: false,
   };
   let stopReading: StopSerialReading | null = null;
   let heartbeatTimer: ReturnType<typeof setInterval> | null = null;
   let heartbeatSending = false;
   const frameHandlers = new Set<(frame: HardwareFrame) => void>();
   const errorHandlers = new Set<(error: Error) => void>();
+  const debugHandlers = new Set<SerialDebugHandler>();
   const frameQueue: HardwareFrame[] = [];
   const pendingFrameWaiters = new Set<{
     predicate: (frame: HardwareFrame) => boolean;
@@ -57,6 +76,12 @@ export function createHardwareConnectionManager() {
 
   function isConnected(): boolean {
     return state.status === 'connected' || state.status === 'reading';
+  }
+
+  function delay(ms: number): Promise<void> {
+    return new Promise((resolve) => {
+      setTimeout(resolve, ms);
+    });
   }
 
   function dispatchFrame(frame: HardwareFrame): void {
@@ -80,8 +105,13 @@ export function createHardwareConnectionManager() {
   }
 
   function dispatchError(error: Error): void {
+    void stopHeartbeat();
     update({ status: 'error', lastError: error.message });
     errorHandlers.forEach((handler) => handler(error));
+  }
+
+  function dispatchDebug(message: string): void {
+    debugHandlers.forEach((handler) => handler(message));
   }
 
   function queuedFrame(predicate: (frame: HardwareFrame) => boolean): HardwareFrame | null {
@@ -113,20 +143,58 @@ export function createHardwareConnectionManager() {
     });
   }
 
-  async function connect(): Promise<HardwareConnectionState> {
-    update({ status: 'connecting', lastError: undefined });
+  function addRuntimeHandlers(options: HardwareConnectOptions = {}): void {
+    if (options.onFrame) frameHandlers.add(options.onFrame);
+    if (options.onError) errorHandlers.add(options.onError);
+    if (options.onDebug) debugHandlers.add(options.onDebug);
+  }
+
+  async function connect(options: HardwareConnectOptions = {}): Promise<HardwareConnectionState> {
+    addRuntimeHandlers(options);
+    update({ status: 'connecting', lastError: undefined, handshakeConfirmed: false });
     const bridge = await connectSerial();
     if (!bridge.connected) {
       return update({
         status: bridge.supported ? 'error' : 'unsupported',
         lastError: bridge.message,
+        handshakeConfirmed: false,
       });
     }
+
+    options.onLog?.('Porta serial aberta.');
+    startReading(options.onFrame ?? (() => undefined), options.onError, options.onDebug);
+    options.onLog?.('Aguardando Nitro Box inicializar.');
+    await delay(NITRO_BOOT_DELAY_MS);
+
+    options.onLog?.('Comando ping enviado.');
+    const pingResult = await sendHardwareCommand(createPingCommand());
+    if (!pingResult.sent) {
+      await disconnect();
+      return update({
+        status: 'error',
+        lastError: pingResult.message,
+        handshakeConfirmed: false,
+      });
+    }
+
+    const pongFrame = await waitForFrame(isNitroBoxPongFrame, NITRO_PING_TIMEOUT_MS);
+    if (!pongFrame) {
+      await disconnect();
+      return update({
+        status: 'error',
+        lastError: NITRO_PING_TIMEOUT_MESSAGE,
+        handshakeConfirmed: false,
+      });
+    }
+
+    options.onLog?.('Nitro Box respondeu: online.');
     return update({
       status: 'connected',
       portLabel: 'Nitro Box / Web Serial',
       connectedAt: new Date().toISOString(),
       lastError: undefined,
+      lastFrame: pongFrame,
+      handshakeConfirmed: true,
     });
   }
 
@@ -140,6 +208,7 @@ export function createHardwareConnectionManager() {
       connectedAt: undefined,
       lastError: undefined,
       heartbeatActive: false,
+      handshakeConfirmed: false,
     });
   }
 
@@ -156,14 +225,20 @@ export function createHardwareConnectionManager() {
     return result;
   }
 
-  function startReading(onFrame: (frame: HardwareFrame) => void, onError?: (error: Error) => void): HardwareConnectionState {
+  function startReading(
+    onFrame: (frame: HardwareFrame) => void,
+    onError?: (error: Error) => void,
+    onDebug?: SerialDebugHandler,
+  ): HardwareConnectionState {
     frameHandlers.add(onFrame);
     if (onError) errorHandlers.add(onError);
+    if (onDebug) debugHandlers.add(onDebug);
     if (stopReading) return { ...state };
     update({ status: 'reading', lastError: undefined });
     stopReading = readSerialFrames(
       dispatchFrame,
       dispatchError,
+      dispatchDebug,
     );
     return { ...state };
   }
@@ -173,6 +248,7 @@ export function createHardwareConnectionManager() {
     stopReading = null;
     frameHandlers.clear();
     errorHandlers.clear();
+    debugHandlers.clear();
     pendingFrameWaiters.forEach((waiter) => {
       clearTimeout(waiter.timeout);
       waiter.resolve(null);
@@ -208,16 +284,16 @@ export function createHardwareConnectionManager() {
     const result = await sendCommand(createPingCommand());
     if (!result.sent) return { ok: false, message: result.message };
 
-    const frame = await waitForFrame((candidate) => candidate.event === 'pong', 2000);
-    if (frame?.event === 'pong') {
+    const frame = await waitForFrame(isNitroBoxPongFrame, NITRO_PING_TIMEOUT_MS);
+    if (frame && isNitroBoxPongFrame(frame)) {
       return { ok: true, message: 'Nitro Box respondeu: online.', frame };
     }
 
-    return { ok: false, message: 'Nitro Box não respondeu ao ping dentro do tempo esperado.' };
+    return { ok: false, message: NITRO_PING_TIMEOUT_MESSAGE };
   }
 
   function startHeartbeat(onLog?: (message: string) => void): HardwareConnectionState {
-    if (heartbeatTimer || !isConnected()) return { ...state };
+    if (heartbeatTimer || !isConnected() || !state.handshakeConfirmed) return { ...state };
 
     const sendHeartbeat = async () => {
       if (heartbeatSending) return;
@@ -235,6 +311,7 @@ export function createHardwareConnectionManager() {
       await sendHardwareCommand(createEmergencyStopCommand());
       onLog?.('Corte de segurança acionado.');
       await stopHeartbeat();
+      update({ status: 'error' });
     };
 
     update({ heartbeatActive: true });

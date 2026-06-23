@@ -104,10 +104,7 @@ export function NitroConsole() {
   }
 
   function handleHardwareFrame(frame: HardwareFrame) {
-    if (frame.event === 'pong') {
-      addRuntimeLog('Nitro Box respondeu: online.');
-      return;
-    }
+    if (frame.event === 'pong') return;
     if (frame.event === 'heartbeat_ack') {
       addRuntimeLog('Heartbeat confirmado.');
       return;
@@ -162,17 +159,18 @@ export function NitroConsole() {
     const connected = connectionState.status === 'connected' || connectionState.status === 'reading';
     setHardwareNotice(connected ? 'Encerrando conexão com Nitro Box...' : 'Aguardando seleção da porta serial...');
     if (!connected) addRuntimeLog('Porta serial solicitada.');
-    const nextState = connected ? await connectionManager.disconnect() : await connectionManager.connect();
+    const nextState = connected
+      ? await connectionManager.disconnect()
+      : await connectionManager.connect({
+        onFrame: handleHardwareFrame,
+        onError: (error) => addRuntimeLog(error.message, 'WARN'),
+        onLog: addRuntimeLog,
+        onDebug: addRuntimeLog,
+      });
     setUsingSimulator(false);
     if (nextState.status === 'connected') {
-      connectionManager.startReading(
-        handleHardwareFrame,
-        (error) => addRuntimeLog(error.message, 'WARN'),
-      );
-      connectionManager.startHeartbeat(addRuntimeLog);
-      const readingState = connectionManager.getState();
+      const readingState = connectionManager.startHeartbeat(addRuntimeLog);
       setConnectionState(readingState);
-      addRuntimeLog('Nitro Box conectada.');
       setHardwareNotice('Nitro Box conectada via Web Serial. Heartbeat ativo.');
       return;
     }

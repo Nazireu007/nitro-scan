@@ -1,5 +1,10 @@
 import type { ConfirmationState } from '../types/confirmation';
 import {
+  NITRO_PING_TIMEOUT_MESSAGE,
+  createHardwareConnectionManager,
+  isNitroBoxPongFrame,
+} from './hardwareConnectionManager';
+import {
   createEmergencyStopCommand,
   createHeartbeatCommand,
   createLowInjectionCommand,
@@ -95,12 +100,41 @@ export async function validateHardwareScenarios(): Promise<HardwareValidationRes
     actual: `${pingCommand.type}/${pingCommand.command}`,
   });
 
+  const pongFrame = parseHardwareFrame({
+    type: 'nitro_frame',
+    event: 'pong',
+    hardware: 'Nitro Box',
+    status: 'online',
+  });
+  results.push({
+    id: 'pong_frame',
+    passed: isNitroBoxPongFrame(pongFrame),
+    expected: 'pong da Nitro Box reconhecido',
+    actual: `${pongFrame.event}/${pongFrame.hardware}/${pongFrame.status}`,
+  });
+
   const heartbeatCommand = createHeartbeatCommand(123456);
   results.push({
     id: 'heartbeat_command',
     passed: heartbeatCommand.command === 'heartbeat' && heartbeatCommand.timestamp === 123456,
     expected: 'heartbeat com timestamp numérico',
     actual: `${heartbeatCommand.command}/${heartbeatCommand.timestamp}`,
+  });
+
+  const managerBeforeHandshake = createHardwareConnectionManager();
+  const heartbeatBeforePong = managerBeforeHandshake.startHeartbeat();
+  results.push({
+    id: 'heartbeat_before_pong',
+    passed: heartbeatBeforePong.heartbeatActive !== true,
+    expected: 'heartbeat bloqueado antes do pong',
+    actual: heartbeatBeforePong.heartbeatActive ? 'heartbeat ativo' : 'heartbeat inativo',
+  });
+
+  results.push({
+    id: 'ping_timeout_message',
+    passed: NITRO_PING_TIMEOUT_MESSAGE === 'Nitro Box não respondeu ao ping dentro do tempo esperado.',
+    expected: 'erro amigável de timeout de ping',
+    actual: NITRO_PING_TIMEOUT_MESSAGE,
   });
 
   const heartbeatTimeoutFrame = parseHardwareFrame({

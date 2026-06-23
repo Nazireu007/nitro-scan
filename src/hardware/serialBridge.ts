@@ -34,11 +34,27 @@ export type SerialCommandResult = {
 
 export type SerialFrameHandler = (frame: HardwareFrame) => void;
 export type SerialErrorHandler = (error: Error) => void;
+export type SerialDebugHandler = (message: string) => void;
 export type StopSerialReading = () => Promise<void>;
 
 let activePort: NitroSerialPort | null = null;
 let activeReader: ReadableStreamDefaultReader<Uint8Array> | null = null;
 let serialBuffer = '';
+
+function compactSerialText(value: string): string {
+  return value
+    .replace(/[^\x20-\x7EÀ-ÿ{}[\]":,._/%\\-]/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim()
+    .slice(0, 180);
+}
+
+function jsonCandidateFromSerialLine(line: string): string | null {
+  const start = line.indexOf('{');
+  const end = line.lastIndexOf('}');
+  if (start < 0 || end < start) return null;
+  return line.slice(start, end + 1);
+}
 
 function serialApi(): NitroSerialApi | undefined {
   if (typeof navigator === 'undefined') return undefined;
@@ -159,7 +175,11 @@ export async function readSerialFrame(raw?: unknown, timeoutMs = 3000): Promise<
   });
 }
 
-export function readSerialFrames(onFrame: SerialFrameHandler, onError: SerialErrorHandler): StopSerialReading {
+export function readSerialFrames(
+  onFrame: SerialFrameHandler,
+  onError: SerialErrorHandler,
+  onDebug?: SerialDebugHandler,
+): StopSerialReading {
   if (!activePort?.readable || activeReader) {
     queueMicrotask(() => onError(new Error('Nitro Box não conectada ou leitura serial já ativa.')));
     return async () => undefined;
@@ -178,7 +198,10 @@ export function readSerialFrames(onFrame: SerialFrameHandler, onError: SerialErr
           if (!stopped) onError(new Error('Conexão serial encerrada pela Nitro Box.'));
           break;
         }
-        serialBuffer += decoder.decode(value, { stream: true });
+        const chunk = decoder.decode(value, { stream: true });
+        const compactChunk = compactSerialText(chunk);
+        if (compactChunk) onDebug?.(`Serial RX bruto: ${compactChunk}`);
+        serialBuffer += chunk;
 
         let lineBreak = serialBuffer.indexOf('\n');
         while (lineBreak >= 0) {
@@ -188,10 +211,24 @@ export function readSerialFrames(onFrame: SerialFrameHandler, onError: SerialErr
           if (!frameLine) continue;
 
           try {
-            onFrame(parseHardwareFrame(frameLine));
+            const jsonCandidate = jsonCandidateFromSerialLine(frameLine);
+            if (!jsonCandidate) {
+              const ignoredLine = compactSerialText(frameLine);
+              if (ignoredLine) onDebug?.(`Linha serial ignorada: ${ignoredLine}`);
+              continue;
+            }
+
+            if (jsonCandidate !== frameLine) {
+              const ignoredLine = compactSerialText(frameLine.replace(jsonCandidate, ''));
+              if (ignoredLine) onDebug?.(`Linha serial ignorada: ${ignoredLine}`);
+            }
+
+            const frame = parseHardwareFrame(jsonCandidate);
+            onDebug?.(`Frame JSON recebido: ${frame.event ?? frame.scanMode}`);
+            onFrame(frame);
           } catch (error) {
-            const detail = error instanceof Error ? error.message : 'conteúdo não reconhecido';
-            onError(new Error(`Frame JSON inválido recebido: ${detail}`));
+            const ignoredLine = compactSerialText(frameLine);
+            if (ignoredLine) onDebug?.(`Linha serial ignorada: ${ignoredLine}`);
           }
         }
       }

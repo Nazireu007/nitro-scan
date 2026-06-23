@@ -57,13 +57,13 @@ void handlePreScan(const String& commandLine) {
 
   sendFrame(
     String("{\"type\":\"nitro_frame\",")
-    "\"mode\":\"one_point_scan\","
-    "\"point\":\"" + point + "\","
-    "\"groundDetected\":true,"
-    "\"preScanCompleted\":true,"
-    "\"impedanceOhms\":10000,"
-    "\"safetyState\":\"safe_to_inject\","
-    "\"source\":\"esp32_mock\"}"
+    + "\"mode\":\"one_point_scan\","
+    + "\"point\":\"" + point + "\","
+    + "\"groundDetected\":true,"
+    + "\"preScanCompleted\":true,"
+    + "\"impedanceOhms\":10000,"
+    + "\"safetyState\":\"safe_to_inject\","
+    + "\"source\":\"esp32_mock\"}"
   );
 }
 

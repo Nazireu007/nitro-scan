@@ -1,5 +1,5 @@
 import type { FormEvent } from 'react';
-import { AlertTriangle, ChevronDown, CircuitBoard, ClipboardList, Eraser, Play, ShieldCheck, SlidersHorizontal, Usb, Zap } from 'lucide-react';
+import { AlertTriangle, ChevronDown, CircuitBoard, ClipboardList, Eraser, Play, Radio, ShieldCheck, SlidersHorizontal, Usb, Zap } from 'lucide-react';
 import {
   consoleTestModeOptions,
   consoleTestOriginOptions,
@@ -25,6 +25,7 @@ type ScanControlPanelProps = {
   serialConnected: boolean;
   scanRunning: boolean;
   onToggleSerial: () => void;
+  onTestCommunication: () => void;
   onOneClickScan: () => void;
   onEmergencyStop: () => void;
 };
@@ -65,6 +66,7 @@ export function ScanControlPanel({
   serialConnected,
   scanRunning,
   onToggleSerial,
+  onTestCommunication,
   onOneClickScan,
   onEmergencyStop,
 }: ScanControlPanelProps) {
@@ -106,6 +108,10 @@ export function ScanControlPanel({
             <button className="hardware-emergency-button" type="button" onClick={onEmergencyStop}>
               <AlertTriangle aria-hidden="true" />
               Parada
+            </button>
+            <button type="button" onClick={onTestCommunication} disabled={!serialConnected}>
+              <Radio aria-hidden="true" />
+              Testar comunicação
             </button>
             <button type="button" onClick={onToggleSerial} disabled={!serialSupported}>
               <Usb aria-hidden="true" />

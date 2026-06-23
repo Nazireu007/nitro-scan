@@ -1,7 +1,7 @@
 import type { DiagnosticLog } from '../types/diagnostics';
 import type { OfflineScanInput, OfflineScanResult } from '../types/offlineScan';
 
-export type HardwareSource = 'simulator' | 'serial' | 'usb' | 'bluetooth' | 'manual';
+export type HardwareSource = 'simulator' | 'serial' | 'usb' | 'bluetooth' | 'manual' | 'esp32_mock';
 
 export type HardwareSafetyState =
   | 'idle'
@@ -40,6 +40,11 @@ export type HardwareFrame = {
   channelC: HardwareChannelReading;
   safetyState: HardwareSafetyState;
   preScanCompleted: boolean;
+  event?: string;
+  hardware?: string;
+  status?: string;
+  cutoffState?: 'open' | 'closed' | string;
+  reason?: string;
   raw: unknown;
 };
 
@@ -66,6 +71,8 @@ export type HardwareAnalysisResult = {
 };
 
 export type HardwareCommandName =
+  | 'ping'
+  | 'heartbeat'
   | 'pre_scan'
   | 'inject_low'
   | 'inject_sine'
@@ -77,10 +84,10 @@ export type HardwareCommandName =
 export type HardwareCommand = {
   type: 'nitro_command';
   command: HardwareCommandName;
-  mode: HardwareScanMode;
+  mode?: HardwareScanMode;
   point?: string;
   limitCurrent?: number;
   maxVoltage?: number;
   frequency?: number;
-  timestamp: string;
+  timestamp: string | number;
 };

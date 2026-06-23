@@ -32,7 +32,7 @@ const scanModes: HardwareScanMode[] = [
   'component_check',
   'confirmation',
 ];
-const sources: HardwareSource[] = ['simulator', 'serial', 'usb', 'bluetooth', 'manual'];
+const sources: HardwareSource[] = ['simulator', 'serial', 'usb', 'bluetooth', 'manual', 'esp32_mock'];
 const safetyStates: HardwareSafetyState[] = ['idle', 'pre_scan', 'safe_to_inject', 'warning', 'blocked', 'emergency_stop'];
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -115,6 +115,7 @@ export function parseHardwareFrame(raw: unknown): HardwareFrame {
   const mode = stringValue(payload.mode ?? payload.scanMode, 'one_point_scan') as HardwareScanMode;
   const source = stringValue(payload.source, 'serial') as HardwareSource;
   const requestedSafety = stringValue(payload.safetyState, 'idle') as HardwareSafetyState;
+  const event = stringValue(payload.event) || undefined;
   const frame: HardwareFrame = {
     id: stringValue(payload.id, `hardware-${Date.now()}`),
     timestamp: stringValue(payload.timestamp, new Date().toISOString()),
@@ -137,6 +138,11 @@ export function parseHardwareFrame(raw: unknown): HardwareFrame {
     preScanCompleted: typeof payload.preScanCompleted === 'boolean'
       ? payload.preScanCompleted
       : metadata.preScanCompleted ?? false,
+    event,
+    hardware: stringValue(payload.hardware) || undefined,
+    status: stringValue(payload.status) || undefined,
+    cutoffState: stringValue(payload.cutoffState) || undefined,
+    reason: stringValue(payload.reason) || undefined,
     raw: payload.raw ?? raw,
   };
   const validation = validateHardwareFrame(frame);
@@ -212,6 +218,22 @@ function command(commandName: HardwareCommand['command'], mode: HardwareScanMode
     point,
     timestamp: new Date().toISOString(),
     ...values,
+  };
+}
+
+export function createPingCommand(): HardwareCommand {
+  return {
+    type: 'nitro_command',
+    command: 'ping',
+    timestamp: Date.now(),
+  };
+}
+
+export function createHeartbeatCommand(timestamp = Date.now()): HardwareCommand {
+  return {
+    type: 'nitro_command',
+    command: 'heartbeat',
+    timestamp,
   };
 }
 

@@ -1,4 +1,13 @@
 import type { ConfirmationState } from '../types/confirmation';
+import {
+  createEmergencyStopCommand,
+  createHeartbeatCommand,
+  createLowInjectionCommand,
+  createPingCommand,
+  createStopCommand,
+  parseHardwareFrame,
+} from './hardwareProtocol';
+import { canExecuteCommand } from './hardwareSafety';
 import { runOneClickBoardScan } from './oneClickScanRunner';
 import { simulateOneClickBoardScan, type HardwareSimulationScenario } from './hardwareSimulator';
 
@@ -76,6 +85,56 @@ export async function validateHardwareScenarios(): Promise<HardwareValidationRes
     passed: overcurrentResult.step === 'emergency_stop' && emergencyCommandSent,
     expected: 'emergency_stop com comando enviado',
     actual: overcurrentResult.step,
+  });
+
+  const pingCommand = createPingCommand();
+  results.push({
+    id: 'ping_command',
+    passed: pingCommand.type === 'nitro_command' && pingCommand.command === 'ping',
+    expected: 'comando ping válido',
+    actual: `${pingCommand.type}/${pingCommand.command}`,
+  });
+
+  const heartbeatCommand = createHeartbeatCommand(123456);
+  results.push({
+    id: 'heartbeat_command',
+    passed: heartbeatCommand.command === 'heartbeat' && heartbeatCommand.timestamp === 123456,
+    expected: 'heartbeat com timestamp numérico',
+    actual: `${heartbeatCommand.command}/${heartbeatCommand.timestamp}`,
+  });
+
+  const heartbeatTimeoutFrame = parseHardwareFrame({
+    type: 'nitro_frame',
+    event: 'heartbeat_timeout',
+    safetyState: 'emergency_stop',
+    cutoffState: 'open',
+    reason: 'heartbeat_timeout',
+  });
+  results.push({
+    id: 'heartbeat_timeout',
+    passed: heartbeatTimeoutFrame.safetyState === 'emergency_stop' && heartbeatTimeoutFrame.cutoffState === 'open',
+    expected: 'heartbeat timeout vira emergency_stop',
+    actual: `${heartbeatTimeoutFrame.safetyState}/${heartbeatTimeoutFrame.cutoffState}`,
+  });
+
+  const stopAckFrame = parseHardwareFrame({
+    type: 'nitro_frame',
+    event: 'stop_ack',
+    cutoffState: 'open',
+    safetyState: 'idle',
+  });
+  results.push({
+    id: 'stop_ack',
+    passed: stopAckFrame.cutoffState === 'open' && stopAckFrame.safetyState === 'idle' && canExecuteCommand(createStopCommand()),
+    expected: 'stop abre corte lógico',
+    actual: `${stopAckFrame.cutoffState}/${stopAckFrame.safetyState}`,
+  });
+
+  results.push({
+    id: 'emergency_stop_blocks_injection',
+    passed: canExecuteCommand(createEmergencyStopCommand()) && !canExecuteCommand(createLowInjectionCommand(), 'emergency_stop'),
+    expected: 'emergency_stop permitido e injeção bloqueada',
+    actual: canExecuteCommand(createLowInjectionCommand(), 'emergency_stop') ? 'injeção permitida' : 'injeção bloqueada',
   });
 
   return results;

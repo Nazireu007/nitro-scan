@@ -127,19 +127,35 @@ export async function disconnectSerial(): Promise<SerialBridgeState> {
   };
 }
 
-export async function readSerialFrame(raw?: unknown): Promise<HardwareFrame | null> {
+export async function readSerialFrame(raw?: unknown, timeoutMs = 3000): Promise<HardwareFrame | null> {
   if (raw !== undefined) return parseHardwareFrame(raw);
   return new Promise<HardwareFrame | null>((resolve, reject) => {
     let stop: StopSerialReading = async () => undefined;
+    let settled = false;
+    const timeout = globalThis.setTimeout(() => {
+      if (settled) return;
+      settled = true;
+      void stop().then(() => resolve(null));
+    }, timeoutMs);
     stop = readSerialFrames(
       (frame) => {
+        if (settled) return;
+        settled = true;
+        globalThis.clearTimeout(timeout);
         void stop().then(() => resolve(frame));
       },
       (error) => {
+        if (settled) return;
+        settled = true;
+        globalThis.clearTimeout(timeout);
         void stop().then(() => reject(error));
       },
     );
-    if (!activeReader) resolve(null);
+    if (!activeReader && !settled) {
+      settled = true;
+      globalThis.clearTimeout(timeout);
+      resolve(null);
+    }
   });
 }
 

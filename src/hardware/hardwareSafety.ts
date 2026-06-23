@@ -10,6 +10,33 @@ export const HARDWARE_SAFETY_LIMITS = {
 export function assessHardwareSafety(frame: HardwareFrame): HardwareSafetyAssessment {
   const reasons: string[] = [];
 
+  if (frame.event) {
+    if (frame.event === 'heartbeat_timeout' || frame.event === 'emergency_stop_ack' || frame.safetyState === 'emergency_stop') {
+      return {
+        state: 'emergency_stop',
+        canAnalyze: false,
+        canInject: false,
+        reasons: [frame.reason === 'heartbeat_timeout' ? 'Heartbeat expirado. Corte de segurança acionado.' : 'Parada de emergência confirmada pela Nitro Box.'],
+      };
+    }
+
+    if (frame.event === 'command_blocked' || frame.safetyState === 'blocked') {
+      return {
+        state: 'blocked',
+        canAnalyze: false,
+        canInject: false,
+        reasons: [frame.reason ? `Comando bloqueado: ${frame.reason}.` : 'Comando bloqueado pela Nitro Box.'],
+      };
+    }
+
+    return {
+      state: frame.safetyState,
+      canAnalyze: false,
+      canInject: false,
+      reasons: [`Frame de comunicação recebido: ${frame.event}.`],
+    };
+  }
+
   if (!frame.groundDetected) {
     return {
       state: 'blocked',
@@ -101,7 +128,12 @@ export function canExecuteCommand(
   command: HardwareCommand,
   frameOrSafetyState?: HardwareFrame | HardwareSafetyState,
 ): boolean {
-  if (command.command === 'emergency_stop' || command.command === 'stop') return true;
+  if (
+    command.command === 'ping' ||
+    command.command === 'heartbeat' ||
+    command.command === 'emergency_stop' ||
+    command.command === 'stop'
+  ) return true;
   if (command.command === 'pre_scan' || command.command === 'read_impedance') return true;
 
   const frame = typeof frameOrSafetyState === 'object' ? frameOrSafetyState : undefined;

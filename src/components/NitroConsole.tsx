@@ -14,7 +14,8 @@ import { simulateHardwareScenario, type HardwareSimulationScenario } from '../ha
 import { createEmergencyStopCommand } from '../hardware/hardwareProtocol';
 import { runOneClickBoardScan, type OneClickScanStep } from '../hardware/oneClickScanRunner';
 import { detectPlatformCapabilities, directSerialGuidance } from '../hardware/platformCapabilities';
-import type { HardwareScanMode } from '../hardware/hardwareTypes';
+import type { HardwareFrame, HardwareScanMode } from '../hardware/hardwareTypes';
+import type { DiagnosticLog } from '../types/diagnostics';
 import { parseNumericValue } from '../utils/electrical';
 import { EvidenceStrip } from './EvidenceStrip';
 import { InvestigationStrip } from './InvestigationStrip';
@@ -91,6 +92,44 @@ export function NitroConsole() {
     setAnalysis(nextAnalysis);
   }
 
+  function addRuntimeLog(message: string, level: DiagnosticLog['level'] = 'INFO') {
+    setAnalysis((current) => ({
+      ...current,
+      analyzedAt: new Date().toISOString(),
+      result: {
+        ...current.result,
+        logs: [...current.result.logs, { level, message, source: 'hardwareConnectionManager' }],
+      },
+    }));
+  }
+
+  function handleHardwareFrame(frame: HardwareFrame) {
+    if (frame.event === 'pong') {
+      addRuntimeLog('Nitro Box respondeu: online.');
+      return;
+    }
+    if (frame.event === 'heartbeat_ack') {
+      addRuntimeLog('Heartbeat confirmado.');
+      return;
+    }
+    if (frame.event === 'heartbeat_timeout') {
+      addRuntimeLog('Heartbeat expirado.', 'FAIL');
+      addRuntimeLog('Corte de segurança acionado.', 'FAIL');
+      return;
+    }
+    if (frame.event === 'stop_ack') {
+      addRuntimeLog('Nitro Box confirmou parada.');
+      return;
+    }
+    if (frame.event === 'emergency_stop_ack') {
+      addRuntimeLog('Parada de emergência confirmada pela Nitro Box.', 'FAIL');
+      return;
+    }
+    if (frame.event === 'command_blocked') {
+      addRuntimeLog(`Comando bloqueado pela Nitro Box${frame.reason ? `: ${frame.reason}` : ''}.`, 'WARN');
+    }
+  }
+
   function analyze() {
     commitAnalysis(analyzeConsoleInput(input));
   }
@@ -122,10 +161,33 @@ export function NitroConsole() {
   async function toggleSerialConnection() {
     const connected = connectionState.status === 'connected' || connectionState.status === 'reading';
     setHardwareNotice(connected ? 'Encerrando conexão com Nitro Box...' : 'Aguardando seleção da porta serial...');
+    if (!connected) addRuntimeLog('Porta serial solicitada.');
     const nextState = connected ? await connectionManager.disconnect() : await connectionManager.connect();
-    setConnectionState(nextState);
     setUsingSimulator(false);
-    setHardwareNotice(nextState.lastError ?? (nextState.status === 'connected' ? 'Nitro Box conectada via Web Serial.' : directSerialGuidance(capabilities)));
+    if (nextState.status === 'connected') {
+      connectionManager.startReading(
+        handleHardwareFrame,
+        (error) => addRuntimeLog(error.message, 'WARN'),
+      );
+      connectionManager.startHeartbeat(addRuntimeLog);
+      const readingState = connectionManager.getState();
+      setConnectionState(readingState);
+      addRuntimeLog('Nitro Box conectada.');
+      setHardwareNotice('Nitro Box conectada via Web Serial. Heartbeat ativo.');
+      return;
+    }
+    setConnectionState(nextState);
+    if (connected) addRuntimeLog('Nitro Box desconectada.');
+    setHardwareNotice(nextState.lastError ?? directSerialGuidance(capabilities));
+  }
+
+  async function testCommunication() {
+    setHardwareNotice('Comando ping enviado.');
+    addRuntimeLog('Comando ping enviado.');
+    const result = await connectionManager.testCommunication();
+    setConnectionState(connectionManager.getState());
+    setHardwareNotice(result.message);
+    addRuntimeLog(result.message, result.ok ? 'INFO' : 'WARN');
   }
 
   async function oneClickScan() {
@@ -168,8 +230,10 @@ export function NitroConsole() {
   }
 
   async function emergencyStop() {
+    await connectionManager.stopHeartbeat();
     const result = await connectionManager.sendCommand(createEmergencyStopCommand(input.node.trim() || 'VIN'));
     setHardwareNotice(result.sent ? 'Parada de emergência enviada à Nitro Box.' : result.message);
+    addRuntimeLog(result.sent ? 'Parada de emergência enviada.' : result.message, result.sent ? 'WARN' : 'FAIL');
     setConnectionState(connectionManager.getState());
   }
 
@@ -219,6 +283,7 @@ export function NitroConsole() {
             serialConnected={serialConnected}
             scanRunning={scanRunning}
             onToggleSerial={toggleSerialConnection}
+            onTestCommunication={testCommunication}
             onOneClickScan={oneClickScan}
             onEmergencyStop={emergencyStop}
           />

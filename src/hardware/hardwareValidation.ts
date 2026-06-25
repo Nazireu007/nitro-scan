@@ -9,7 +9,10 @@ import {
   createHeartbeatCommand,
   createLowInjectionCommand,
   createPingCommand,
+  createSineCommand,
   createStopCommand,
+  createTestCutoffCloseCommand,
+  createTestCutoffOpenCommand,
   parseHardwareFrame,
 } from './hardwareProtocol';
 import { canExecuteCommand } from './hardwareSafety';
@@ -143,12 +146,13 @@ export async function validateHardwareScenarios(): Promise<HardwareValidationRes
     safetyState: 'emergency_stop',
     cutoffState: 'open',
     reason: 'heartbeat_timeout',
+    pin: 26,
   });
   results.push({
     id: 'heartbeat_timeout',
-    passed: heartbeatTimeoutFrame.safetyState === 'emergency_stop' && heartbeatTimeoutFrame.cutoffState === 'open',
-    expected: 'heartbeat timeout vira emergency_stop',
-    actual: `${heartbeatTimeoutFrame.safetyState}/${heartbeatTimeoutFrame.cutoffState}`,
+    passed: heartbeatTimeoutFrame.safetyState === 'emergency_stop' && heartbeatTimeoutFrame.cutoffState === 'open' && heartbeatTimeoutFrame.pin === 26,
+    expected: 'heartbeat timeout vira emergency_stop e abre GPIO26',
+    actual: `${heartbeatTimeoutFrame.safetyState}/${heartbeatTimeoutFrame.cutoffState}/GPIO${heartbeatTimeoutFrame.pin ?? 'n/a'}`,
   });
 
   const stopAckFrame = parseHardwareFrame({
@@ -156,19 +160,102 @@ export async function validateHardwareScenarios(): Promise<HardwareValidationRes
     event: 'stop_ack',
     cutoffState: 'open',
     safetyState: 'idle',
+    pin: 26,
   });
   results.push({
     id: 'stop_ack',
-    passed: stopAckFrame.cutoffState === 'open' && stopAckFrame.safetyState === 'idle' && canExecuteCommand(createStopCommand()),
-    expected: 'stop abre corte lógico',
-    actual: `${stopAckFrame.cutoffState}/${stopAckFrame.safetyState}`,
+    passed: stopAckFrame.cutoffState === 'open' && stopAckFrame.safetyState === 'idle' && stopAckFrame.pin === 26 && canExecuteCommand(createStopCommand()),
+    expected: 'stop abre corte lógico no GPIO26',
+    actual: `${stopAckFrame.cutoffState}/${stopAckFrame.safetyState}/GPIO${stopAckFrame.pin ?? 'n/a'}`,
+  });
+
+  const emergencyStopAckFrame = parseHardwareFrame({
+    type: 'nitro_frame',
+    event: 'emergency_stop_ack',
+    cutoffState: 'open',
+    safetyState: 'emergency_stop',
+    pin: 26,
+  });
+  results.push({
+    id: 'emergency_stop_ack',
+    passed: emergencyStopAckFrame.cutoffState === 'open' && emergencyStopAckFrame.safetyState === 'emergency_stop' && emergencyStopAckFrame.pin === 26,
+    expected: 'emergency_stop abre corte lógico no GPIO26',
+    actual: `${emergencyStopAckFrame.cutoffState}/${emergencyStopAckFrame.safetyState}/GPIO${emergencyStopAckFrame.pin ?? 'n/a'}`,
+  });
+
+  const cutoffCloseCommand = createTestCutoffCloseCommand();
+  results.push({
+    id: 'test_cutoff_close_command',
+    passed: cutoffCloseCommand.type === 'nitro_command' && cutoffCloseCommand.command === 'test_cutoff_close',
+    expected: 'comando test_cutoff_close válido',
+    actual: `${cutoffCloseCommand.type}/${cutoffCloseCommand.command}`,
+  });
+
+  const cutoffOpenCommand = createTestCutoffOpenCommand();
+  results.push({
+    id: 'test_cutoff_open_command',
+    passed: cutoffOpenCommand.type === 'nitro_command' && cutoffOpenCommand.command === 'test_cutoff_open',
+    expected: 'comando test_cutoff_open válido',
+    actual: `${cutoffOpenCommand.type}/${cutoffOpenCommand.command}`,
+  });
+
+  const cutoffClosedFrame = parseHardwareFrame({
+    type: 'nitro_frame',
+    event: 'cutoff_test_closed',
+    cutoffState: 'closed_test',
+    safetyState: 'cutoff_test',
+    pin: 26,
+  });
+  results.push({
+    id: 'cutoff_test_closed_frame',
+    passed: cutoffClosedFrame.event === 'cutoff_test_closed' && cutoffClosedFrame.cutoffState === 'closed_test' && cutoffClosedFrame.safetyState === 'cutoff_test' && cutoffClosedFrame.pin === 26,
+    expected: 'GPIO26 acionado em modo teste',
+    actual: `${cutoffClosedFrame.event}/${cutoffClosedFrame.cutoffState}/${cutoffClosedFrame.safetyState}/GPIO${cutoffClosedFrame.pin ?? 'n/a'}`,
+  });
+
+  const cutoffOpenFrame = parseHardwareFrame({
+    type: 'nitro_frame',
+    event: 'cutoff_test_open',
+    cutoffState: 'open',
+    safetyState: 'idle',
+    pin: 26,
+  });
+  results.push({
+    id: 'cutoff_test_open_frame',
+    passed: cutoffOpenFrame.event === 'cutoff_test_open' && cutoffOpenFrame.cutoffState === 'open' && cutoffOpenFrame.safetyState === 'idle' && cutoffOpenFrame.pin === 26,
+    expected: 'GPIO26 aberto em modo teste',
+    actual: `${cutoffOpenFrame.event}/${cutoffOpenFrame.cutoffState}/${cutoffOpenFrame.safetyState}/GPIO${cutoffOpenFrame.pin ?? 'n/a'}`,
+  });
+
+  const commandBlockedFrame = parseHardwareFrame({
+    type: 'nitro_frame',
+    event: 'command_blocked',
+    safetyState: 'blocked',
+    cutoffState: 'open',
+    reason: 'hardware_stage_not_connected',
+    pin: 26,
+  });
+  const stageBlockPassed = commandBlockedFrame.safetyState === 'blocked' &&
+    commandBlockedFrame.cutoffState === 'open' &&
+    commandBlockedFrame.reason === 'hardware_stage_not_connected';
+  results.push({
+    id: 'inject_low_stage_blocked',
+    passed: createLowInjectionCommand().command === 'inject_low' && stageBlockPassed,
+    expected: 'inject_low bloqueado enquanto hardware real nao esta conectado',
+    actual: `${commandBlockedFrame.safetyState}/${commandBlockedFrame.cutoffState}/${commandBlockedFrame.reason}`,
+  });
+  results.push({
+    id: 'inject_sine_stage_blocked',
+    passed: createSineCommand().command === 'inject_sine' && stageBlockPassed,
+    expected: 'inject_sine bloqueado enquanto hardware real nao esta conectado',
+    actual: `${commandBlockedFrame.safetyState}/${commandBlockedFrame.cutoffState}/${commandBlockedFrame.reason}`,
   });
 
   results.push({
     id: 'emergency_stop_blocks_injection',
-    passed: canExecuteCommand(createEmergencyStopCommand()) && !canExecuteCommand(createLowInjectionCommand(), 'emergency_stop'),
-    expected: 'emergency_stop permitido e injeção bloqueada',
-    actual: canExecuteCommand(createLowInjectionCommand(), 'emergency_stop') ? 'injeção permitida' : 'injeção bloqueada',
+    passed: canExecuteCommand(createEmergencyStopCommand()) && !canExecuteCommand(createLowInjectionCommand(), 'emergency_stop') && !canExecuteCommand(createSineCommand(), 'emergency_stop'),
+    expected: 'emergency_stop permitido e injeções bloqueadas',
+    actual: canExecuteCommand(createLowInjectionCommand(), 'emergency_stop') || canExecuteCommand(createSineCommand(), 'emergency_stop') ? 'injeção permitida' : 'injeção bloqueada',
   });
 
   return results;

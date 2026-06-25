@@ -1,5 +1,11 @@
 import { canExecuteCommand } from './hardwareSafety';
-import { createEmergencyStopCommand, createHeartbeatCommand, createPingCommand } from './hardwareProtocol';
+import {
+  createEmergencyStopCommand,
+  createHeartbeatCommand,
+  createPingCommand,
+  createTestCutoffCloseCommand,
+  createTestCutoffOpenCommand,
+} from './hardwareProtocol';
 import {
   connectSerial,
   disconnectSerial,
@@ -44,6 +50,14 @@ export type HardwareConnectOptions = {
 
 export function isNitroBoxPongFrame(frame: HardwareFrame): boolean {
   return frame.event === 'pong' && frame.hardware === 'Nitro Box' && frame.status === 'online';
+}
+
+function isCutoffClosedFrame(frame: HardwareFrame): boolean {
+  return frame.event === 'cutoff_test_closed' && frame.cutoffState === 'closed_test' && frame.pin === 26;
+}
+
+function isCutoffOpenFrame(frame: HardwareFrame): boolean {
+  return frame.event === 'cutoff_test_open' && frame.cutoffState === 'open' && frame.pin === 26;
 }
 
 export type HardwareConnectionManager = ReturnType<typeof createHardwareConnectionManager>;
@@ -292,6 +306,38 @@ export function createHardwareConnectionManager() {
     return { ok: false, message: NITRO_PING_TIMEOUT_MESSAGE };
   }
 
+  async function testCutoffClose(): Promise<HardwareCommunicationTestResult> {
+    if (!isConnected() || !state.handshakeConfirmed) {
+      return { ok: false, message: 'Nitro Box não conectada.' };
+    }
+
+    const result = await sendCommand(createTestCutoffCloseCommand());
+    if (!result.sent) return { ok: false, message: result.message };
+
+    const frame = await waitForFrame(isCutoffClosedFrame, 3000);
+    if (frame) {
+      return { ok: true, message: 'Teste de corte: GPIO26 acionado.', frame };
+    }
+
+    return { ok: false, message: 'Nitro Box não confirmou o teste de corte ON.' };
+  }
+
+  async function testCutoffOpen(): Promise<HardwareCommunicationTestResult> {
+    if (!isConnected() || !state.handshakeConfirmed) {
+      return { ok: false, message: 'Nitro Box não conectada.' };
+    }
+
+    const result = await sendCommand(createTestCutoffOpenCommand());
+    if (!result.sent) return { ok: false, message: result.message };
+
+    const frame = await waitForFrame(isCutoffOpenFrame, 3000);
+    if (frame) {
+      return { ok: true, message: 'Teste de corte: GPIO26 aberto.', frame };
+    }
+
+    return { ok: false, message: 'Nitro Box não confirmou o teste de corte OFF.' };
+  }
+
   function startHeartbeat(onLog?: (message: string) => void): HardwareConnectionState {
     if (heartbeatTimer || !isConnected() || !state.handshakeConfirmed) return { ...state };
 
@@ -342,6 +388,8 @@ export function createHardwareConnectionManager() {
     stopReading: stopReadingNow,
     readFrame,
     testCommunication,
+    testCutoffClose,
+    testCutoffOpen,
     startHeartbeat,
     stopHeartbeat,
     getState,

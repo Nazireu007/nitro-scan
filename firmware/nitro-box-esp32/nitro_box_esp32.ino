@@ -1,5 +1,6 @@
 const unsigned long HEARTBEAT_TIMEOUT_MS = 1000;
 const unsigned long HEARTBEAT_ACK_INTERVAL = 4;
+const int CUTOFF_TEST_PIN = 26;
 
 String inputLine = "";
 String cutoffState = "open";
@@ -30,10 +31,15 @@ void sendFrame(const String& payload) {
   Serial.println(payload);
 }
 
-void sendCommandBlocked(const String& reason) {
-  safetyState = "blocked";
+void openCutoffTestPin() {
+  digitalWrite(CUTOFF_TEST_PIN, LOW);
   cutoffState = "open";
-  sendFrame("{\"type\":\"nitro_frame\",\"event\":\"command_blocked\",\"safetyState\":\"blocked\",\"cutoffState\":\"open\",\"reason\":\"" + reason + "\"}");
+}
+
+void sendCommandBlocked(const String& reason) {
+  openCutoffTestPin();
+  safetyState = "blocked";
+  sendFrame("{\"type\":\"nitro_frame\",\"event\":\"command_blocked\",\"safetyState\":\"blocked\",\"cutoffState\":\"open\",\"reason\":\"" + reason + "\",\"pin\":26}");
 }
 
 void handlePing() {
@@ -46,14 +52,14 @@ void handleHeartbeat() {
   heartbeatCount++;
 
   if (heartbeatCount % HEARTBEAT_ACK_INTERVAL == 0) {
-    sendFrame("{\"type\":\"nitro_frame\",\"event\":\"heartbeat_ack\",\"safetyState\":\"idle\"}");
+    sendFrame("{\"type\":\"nitro_frame\",\"event\":\"heartbeat_ack\",\"safetyState\":\"" + safetyState + "\",\"cutoffState\":\"" + cutoffState + "\",\"pin\":26}");
   }
 }
 
 void handlePreScan(const String& commandLine) {
   String point = jsonStringValue(commandLine, "point", "VIN");
+  openCutoffTestPin();
   safetyState = "safe_to_inject";
-  cutoffState = "open";
 
   sendFrame(
     String("{\"type\":\"nitro_frame\",")
@@ -68,17 +74,30 @@ void handlePreScan(const String& commandLine) {
 }
 
 void handleStop() {
-  cutoffState = "open";
+  openCutoffTestPin();
   safetyState = "idle";
   heartbeatActive = false;
-  sendFrame("{\"type\":\"nitro_frame\",\"event\":\"stop_ack\",\"cutoffState\":\"open\",\"safetyState\":\"idle\"}");
+  sendFrame("{\"type\":\"nitro_frame\",\"event\":\"stop_ack\",\"cutoffState\":\"open\",\"safetyState\":\"idle\",\"pin\":26}");
 }
 
 void handleEmergencyStop() {
-  cutoffState = "open";
+  openCutoffTestPin();
   safetyState = "emergency_stop";
   heartbeatActive = false;
-  sendFrame("{\"type\":\"nitro_frame\",\"event\":\"emergency_stop_ack\",\"cutoffState\":\"open\",\"safetyState\":\"emergency_stop\"}");
+  sendFrame("{\"type\":\"nitro_frame\",\"event\":\"emergency_stop_ack\",\"cutoffState\":\"open\",\"safetyState\":\"emergency_stop\",\"pin\":26}");
+}
+
+void handleTestCutoffClose() {
+  digitalWrite(CUTOFF_TEST_PIN, HIGH);
+  cutoffState = "closed_test";
+  safetyState = "cutoff_test";
+  sendFrame("{\"type\":\"nitro_frame\",\"event\":\"cutoff_test_closed\",\"cutoffState\":\"closed_test\",\"safetyState\":\"cutoff_test\",\"pin\":26}");
+}
+
+void handleTestCutoffOpen() {
+  openCutoffTestPin();
+  safetyState = "idle";
+  sendFrame("{\"type\":\"nitro_frame\",\"event\":\"cutoff_test_open\",\"cutoffState\":\"open\",\"safetyState\":\"idle\",\"pin\":26}");
 }
 
 void handleReadImpedance() {
@@ -110,6 +129,10 @@ void handleCommand(const String& commandLine) {
     handleStop();
   } else if (command == "emergency_stop") {
     handleEmergencyStop();
+  } else if (command == "test_cutoff_close") {
+    handleTestCutoffClose();
+  } else if (command == "test_cutoff_open") {
+    handleTestCutoffOpen();
   } else if (command == "read_impedance") {
     handleReadImpedance();
   } else if (command == "inject_low") {
@@ -128,15 +151,17 @@ void checkHeartbeatWatchdog() {
 
   if (millis() - lastHeartbeatAt <= HEARTBEAT_TIMEOUT_MS) return;
 
-  cutoffState = "open";
+  openCutoffTestPin();
   safetyState = "emergency_stop";
   heartbeatActive = false;
 
-  sendFrame("{\"type\":\"nitro_frame\",\"event\":\"heartbeat_timeout\",\"safetyState\":\"emergency_stop\",\"cutoffState\":\"open\",\"reason\":\"heartbeat_timeout\"}");
+  sendFrame("{\"type\":\"nitro_frame\",\"event\":\"heartbeat_timeout\",\"safetyState\":\"emergency_stop\",\"cutoffState\":\"open\",\"reason\":\"heartbeat_timeout\",\"pin\":26}");
 }
 
 void setup() {
   Serial.begin(115200);
+  pinMode(CUTOFF_TEST_PIN, OUTPUT);
+  digitalWrite(CUTOFF_TEST_PIN, LOW);
   cutoffState = "open";
   safetyState = "idle";
   heartbeatActive = false;

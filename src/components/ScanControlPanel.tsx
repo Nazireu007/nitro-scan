@@ -1,5 +1,5 @@
 import type { FormEvent } from 'react';
-import { AlertTriangle, ChevronDown, CircuitBoard, ClipboardList, Eraser, Play, Radio, ShieldCheck, SlidersHorizontal, Usb, Zap } from 'lucide-react';
+import { AlertTriangle, ChevronDown, CircuitBoard, ClipboardList, Eraser, Play, Power, PowerOff, Radio, ShieldCheck, SlidersHorizontal, Usb, Zap } from 'lucide-react';
 import {
   consoleTestModeOptions,
   consoleTestOriginOptions,
@@ -26,6 +26,8 @@ type ScanControlPanelProps = {
   scanRunning: boolean;
   onToggleSerial: () => void;
   onTestCommunication: () => void;
+  onTestCutoffClose: () => void;
+  onTestCutoffOpen: () => void;
   onOneClickScan: () => void;
   onEmergencyStop: () => void;
 };
@@ -67,6 +69,8 @@ export function ScanControlPanel({
   scanRunning,
   onToggleSerial,
   onTestCommunication,
+  onTestCutoffClose,
+  onTestCutoffOpen,
   onOneClickScan,
   onEmergencyStop,
 }: ScanControlPanelProps) {
@@ -112,6 +116,14 @@ export function ScanControlPanel({
             <button type="button" onClick={onTestCommunication} disabled={!serialConnected}>
               <Radio aria-hidden="true" />
               Testar comunicação
+            </button>
+            <button type="button" onClick={onTestCutoffClose} disabled={!serialConnected}>
+              <Power aria-hidden="true" />
+              Testar Corte ON
+            </button>
+            <button type="button" onClick={onTestCutoffOpen} disabled={!serialConnected}>
+              <PowerOff aria-hidden="true" />
+              Testar Corte OFF
             </button>
             <button type="button" onClick={onToggleSerial} disabled={!serialSupported}>
               <Usb aria-hidden="true" />

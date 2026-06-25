@@ -132,12 +132,17 @@ export function canExecuteCommand(
     command.command === 'ping' ||
     command.command === 'heartbeat' ||
     command.command === 'emergency_stop' ||
-    command.command === 'stop'
+    command.command === 'stop' ||
+    command.command === 'test_cutoff_open'
   ) return true;
   if (command.command === 'pre_scan' || command.command === 'read_impedance') return true;
 
   const frame = typeof frameOrSafetyState === 'object' ? frameOrSafetyState : undefined;
   const safetyState = frame ? assessHardwareSafety(frame).state : frameOrSafetyState;
+
+  if (command.command === 'test_cutoff_close') {
+    return safetyState !== 'blocked' && safetyState !== 'emergency_stop';
+  }
 
   if (!safetyState || safetyState === 'blocked' || safetyState === 'emergency_stop') return false;
 

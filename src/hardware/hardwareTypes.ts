@@ -9,6 +9,7 @@ export type HardwareSafetyState =
   | 'safe_to_inject'
   | 'warning'
   | 'blocked'
+  | 'cutoff_test'
   | 'emergency_stop';
 
 export type HardwareScanMode =
@@ -45,6 +46,7 @@ export type HardwareFrame = {
   status?: string;
   cutoffState?: 'open' | 'closed' | string;
   reason?: string;
+  pin?: number;
   raw: unknown;
 };
 
@@ -78,6 +80,8 @@ export type HardwareCommandName =
   | 'inject_sine'
   | 'stop'
   | 'emergency_stop'
+  | 'test_cutoff_close'
+  | 'test_cutoff_open'
   | 'read_impedance'
   | 'read_response';
 

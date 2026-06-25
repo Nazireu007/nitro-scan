@@ -33,7 +33,7 @@ const scanModes: HardwareScanMode[] = [
   'confirmation',
 ];
 const sources: HardwareSource[] = ['simulator', 'serial', 'usb', 'bluetooth', 'manual', 'esp32_mock'];
-const safetyStates: HardwareSafetyState[] = ['idle', 'pre_scan', 'safe_to_inject', 'warning', 'blocked', 'emergency_stop'];
+const safetyStates: HardwareSafetyState[] = ['idle', 'pre_scan', 'safe_to_inject', 'warning', 'blocked', 'cutoff_test', 'emergency_stop'];
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value);
@@ -143,6 +143,7 @@ export function parseHardwareFrame(raw: unknown): HardwareFrame {
     status: stringValue(payload.status) || undefined,
     cutoffState: stringValue(payload.cutoffState) || undefined,
     reason: stringValue(payload.reason) || undefined,
+    pin: typeof payload.pin === 'number' && Number.isFinite(payload.pin) ? payload.pin : undefined,
     raw: payload.raw ?? raw,
   };
   const validation = validateHardwareFrame(frame);
@@ -263,4 +264,20 @@ export function createStopCommand(point = 'VIN'): HardwareCommand {
 
 export function createEmergencyStopCommand(point = 'VIN'): HardwareCommand {
   return command('emergency_stop', 'one_point_scan', point);
+}
+
+export function createTestCutoffCloseCommand(): HardwareCommand {
+  return {
+    type: 'nitro_command',
+    command: 'test_cutoff_close',
+    timestamp: Date.now(),
+  };
+}
+
+export function createTestCutoffOpenCommand(): HardwareCommand {
+  return {
+    type: 'nitro_command',
+    command: 'test_cutoff_open',
+    timestamp: Date.now(),
+  };
 }

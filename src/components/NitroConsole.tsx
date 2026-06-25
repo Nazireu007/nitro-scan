@@ -111,15 +111,24 @@ export function NitroConsole() {
     }
     if (frame.event === 'heartbeat_timeout') {
       addRuntimeLog('Heartbeat expirado.', 'FAIL');
-      addRuntimeLog('Corte de segurança acionado.', 'FAIL');
+      addRuntimeLog('Corte de segurança aberto por heartbeat timeout.', 'FAIL');
       return;
     }
     if (frame.event === 'stop_ack') {
-      addRuntimeLog('Nitro Box confirmou parada.');
+      addRuntimeLog('Corte de segurança aberto por parada.');
       return;
     }
     if (frame.event === 'emergency_stop_ack') {
       addRuntimeLog('Parada de emergência confirmada pela Nitro Box.', 'FAIL');
+      addRuntimeLog('Corte de segurança aberto por parada.', 'FAIL');
+      return;
+    }
+    if (frame.event === 'cutoff_test_closed') {
+      addRuntimeLog('Teste de corte: GPIO26 acionado.');
+      return;
+    }
+    if (frame.event === 'cutoff_test_open') {
+      addRuntimeLog('Teste de corte: GPIO26 aberto.');
       return;
     }
     if (frame.event === 'command_blocked') {
@@ -186,6 +195,24 @@ export function NitroConsole() {
     setConnectionState(connectionManager.getState());
     setHardwareNotice(result.message);
     addRuntimeLog(result.message, result.ok ? 'INFO' : 'WARN');
+  }
+
+  async function testCutoffClose() {
+    setHardwareNotice('Teste de corte enviado: ON.');
+    addRuntimeLog('Teste de corte enviado: ON.');
+    const result = await connectionManager.testCutoffClose();
+    setConnectionState(connectionManager.getState());
+    setHardwareNotice(result.message);
+    if (!result.ok) addRuntimeLog(result.message, 'WARN');
+  }
+
+  async function testCutoffOpen() {
+    setHardwareNotice('Teste de corte enviado: OFF.');
+    addRuntimeLog('Teste de corte enviado: OFF.');
+    const result = await connectionManager.testCutoffOpen();
+    setConnectionState(connectionManager.getState());
+    setHardwareNotice(result.message);
+    if (!result.ok) addRuntimeLog(result.message, 'WARN');
   }
 
   async function oneClickScan() {
@@ -282,6 +309,8 @@ export function NitroConsole() {
             scanRunning={scanRunning}
             onToggleSerial={toggleSerialConnection}
             onTestCommunication={testCommunication}
+            onTestCutoffClose={testCutoffClose}
+            onTestCutoffOpen={testCutoffOpen}
             onOneClickScan={oneClickScan}
             onEmergencyStop={emergencyStop}
           />

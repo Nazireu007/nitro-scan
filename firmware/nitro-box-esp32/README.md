@@ -27,11 +27,32 @@ Cada comando deve terminar com `\n`.
 {"type":"nitro_command","command":"ping"}
 {"type":"nitro_command","command":"heartbeat","timestamp":123456}
 {"type":"nitro_command","command":"pre_scan","mode":"one_point_scan","point":"VIN"}
+{"type":"nitro_command","command":"test_cutoff_close"}
+{"type":"nitro_command","command":"test_cutoff_open"}
 {"type":"nitro_command","command":"stop"}
 {"type":"nitro_command","command":"emergency_stop"}
 ```
 
 Nesta etapa, `inject_low`, `inject_sine`, `read_impedance` e `read_response` nao acionam GPIO nem circuito real. A Nitro Box responde como comando bloqueado porque o hardware de potencia ainda nao esta conectado.
+
+## Teste do LED no GPIO26
+
+Este teste simula o futuro MOSFET de corte usando apenas um LED.
+
+Ligacao:
+
+- `P26 / GPIO26` -> resistor `1K` -> perna maior do LED
+- perna menor do LED -> `GND`
+
+Resultado esperado:
+
+- ao ligar a ESP32: LED apagado;
+- `Testar Corte ON`: LED acende;
+- `Testar Corte OFF`: LED apaga;
+- `Parada`: LED apaga;
+- `heartbeat_timeout`: LED apaga sozinho.
+
+Nao ligar placa real, fonte externa, bateria ou ponta ativa neste teste. Use somente LED, resistor 1K e GND.
 
 ## Heartbeat de seguranca
 
@@ -41,6 +62,7 @@ Se o firmware parar de receber heartbeat por mais de 1000 ms:
 
 - `cutoffState` volta para `open`;
 - `safetyState` vira `emergency_stop`;
+- GPIO26 vai para LOW;
 - a ESP32 envia `heartbeat_timeout`.
 
 Isso simula o futuro corte fisico de seguranca do MOSFET.

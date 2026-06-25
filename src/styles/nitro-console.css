@@ -1198,6 +1198,24 @@
   font-weight: 950;
 }
 
+.live-log-jump-button {
+  min-height: 1.45rem;
+  border: 1px solid rgba(34, 223, 255, 0.22);
+  border-radius: 6px;
+  padding: 0 0.5rem;
+  color: var(--console-cyan);
+  background: rgba(7, 20, 34, 0.92);
+  font-size: 0.56rem;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.live-log-jump-button:hover,
+.live-log-jump-button:focus-visible {
+  border-color: rgba(34, 223, 255, 0.5);
+  background: rgba(10, 38, 56, 0.98);
+}
+
 .console-strip-scroll {
   min-height: 0;
   overflow-x: hidden;

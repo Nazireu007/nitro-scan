@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useMemo, useRef, useState } from 'react';
 import {
   analyzeConsoleInput,
   analyzeHardwareConsoleFrame,
@@ -14,6 +14,7 @@ import { simulateHardwareScenario, type HardwareSimulationScenario } from '../ha
 import { createEmergencyStopCommand } from '../hardware/hardwareProtocol';
 import { runOneClickBoardScan, type OneClickScanStep } from '../hardware/oneClickScanRunner';
 import { detectPlatformCapabilities, directSerialGuidance } from '../hardware/platformCapabilities';
+import { DEBUG_SERIAL_LOGS } from '../hardware/serialBridge';
 import type { HardwareFrame, HardwareScanMode } from '../hardware/hardwareTypes';
 import type { DiagnosticLog } from '../types/diagnostics';
 import { parseNumericValue } from '../utils/electrical';
@@ -36,6 +37,23 @@ function lgCaseInput(): ConsoleScanInput {
     unit: 'estado',
     context: 'LG CJ87; placa desligada; sequência de boot/controle',
   };
+}
+
+const LOG_DEDUP_WINDOW_MS = 2000;
+const MAX_RUNTIME_LOGS = 200;
+const SILENCED_RUNTIME_LOGS = new Set([
+  'Heartbeat enviado.',
+  'Heartbeat confirmado.',
+]);
+
+function isDebugSerialMessage(message: string): boolean {
+  return message.startsWith('Serial RX bruto:') ||
+    message.startsWith('Frame JSON recebido:') ||
+    message.startsWith('Linha serial ignorada:');
+}
+
+function sameLog(a: DiagnosticLog | undefined, message: string, level: DiagnosticLog['level'], source: string): boolean {
+  return Boolean(a && a.message === message && a.level === level && (a.source ?? '') === source);
 }
 
 function hardwareScanMode(input: ConsoleScanInput): HardwareScanMode {
@@ -74,6 +92,7 @@ export function NitroConsole() {
   const [analysis, setAnalysis] = useState<ConsoleAnalysis>(() => loadLgConsoleCase());
   const capabilities = useMemo(() => detectPlatformCapabilities(), []);
   const connectionManager = useMemo(() => createHardwareConnectionManager(), []);
+  const lastRuntimeLogRef = useRef<{ message: string; level: DiagnosticLog['level']; source: string; at: number } | null>(null);
   const [connectionState, setConnectionState] = useState(() => connectionManager.getState());
   const [usingSimulator, setUsingSimulator] = useState(capabilities.recommendedMode === 'simulator');
   const [simulationScenario, setSimulationScenario] = useState<HardwareSimulationScenario>('normal_line');
@@ -93,22 +112,43 @@ export function NitroConsole() {
   }
 
   function addRuntimeLog(message: string, level: DiagnosticLog['level'] = 'INFO') {
+    if (SILENCED_RUNTIME_LOGS.has(message)) return;
+    if (!DEBUG_SERIAL_LOGS && isDebugSerialMessage(message)) return;
+
+    const source = 'hardwareConnectionManager';
+    const now = Date.now();
+    const lastRuntimeLog = lastRuntimeLogRef.current;
+    const shouldAggregate = lastRuntimeLog?.message === message &&
+      lastRuntimeLog.level === level &&
+      lastRuntimeLog.source === source &&
+      now - lastRuntimeLog.at <= LOG_DEDUP_WINDOW_MS;
+
+    lastRuntimeLogRef.current = { message, level, source, at: now };
+
     setAnalysis((current) => ({
       ...current,
       analyzedAt: new Date().toISOString(),
       result: {
         ...current.result,
-        logs: [...current.result.logs, { level, message, source: 'hardwareConnectionManager' }],
+        logs: (() => {
+          const logs = current.result.logs;
+          if (shouldAggregate && sameLog(logs[logs.length - 1], message, level, source)) {
+            const nextLogs = [...logs];
+            const lastIndex = nextLogs.length - 1;
+            const lastLog = nextLogs[lastIndex];
+            if (lastLog) nextLogs[lastIndex] = { ...lastLog, count: (lastLog.count ?? 1) + 1 };
+            return nextLogs.slice(-MAX_RUNTIME_LOGS);
+          }
+
+          return [...logs, { level, message, source }].slice(-MAX_RUNTIME_LOGS);
+        })(),
       },
     }));
   }
 
   function handleHardwareFrame(frame: HardwareFrame) {
     if (frame.event === 'pong') return;
-    if (frame.event === 'heartbeat_ack') {
-      addRuntimeLog('Heartbeat confirmado.');
-      return;
-    }
+    if (frame.event === 'heartbeat_ack') return;
     if (frame.event === 'heartbeat_timeout') {
       addRuntimeLog('Heartbeat expirado.', 'FAIL');
       addRuntimeLog('Corte de segurança aberto por heartbeat timeout.', 'FAIL');
@@ -174,7 +214,7 @@ export function NitroConsole() {
         onFrame: handleHardwareFrame,
         onError: (error) => addRuntimeLog(error.message, 'WARN'),
         onLog: addRuntimeLog,
-        onDebug: addRuntimeLog,
+        onDebug: DEBUG_SERIAL_LOGS ? addRuntimeLog : undefined,
       });
     setUsingSimulator(false);
     if (nextState.status === 'connected') {

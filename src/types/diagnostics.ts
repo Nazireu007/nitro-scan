@@ -46,6 +46,7 @@ export type DiagnosticLog = {
   level: 'SCAN' | 'TEST' | 'AI' | 'WARN' | 'FAIL' | 'INFO';
   message: string;
   source?: string;
+  count?: number;
 };
 
 export type DiagnosticResult = {

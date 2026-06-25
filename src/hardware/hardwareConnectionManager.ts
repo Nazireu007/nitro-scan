@@ -347,15 +347,12 @@ export function createHardwareConnectionManager() {
       const result = await sendHardwareCommand(createHeartbeatCommand());
       heartbeatSending = false;
 
-      if (result.sent) {
-        onLog?.('Heartbeat enviado.');
-        return;
-      }
+      if (result.sent) return;
 
       update({ lastError: result.message });
-      onLog?.('Heartbeat expirado.');
+      onLog?.('Heartbeat falhou.');
       await sendHardwareCommand(createEmergencyStopCommand());
-      onLog?.('Corte de segurança acionado.');
+      onLog?.('Corte de segurança aberto por falha de heartbeat.');
       await stopHeartbeat();
       update({ status: 'error' });
     };

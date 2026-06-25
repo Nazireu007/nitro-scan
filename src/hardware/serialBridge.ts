@@ -37,6 +37,8 @@ export type SerialErrorHandler = (error: Error) => void;
 export type SerialDebugHandler = (message: string) => void;
 export type StopSerialReading = () => Promise<void>;
 
+export const DEBUG_SERIAL_LOGS = false;
+
 let activePort: NitroSerialPort | null = null;
 let activeReader: ReadableStreamDefaultReader<Uint8Array> | null = null;
 let serialBuffer = '';
@@ -54,6 +56,11 @@ function jsonCandidateFromSerialLine(line: string): string | null {
   const end = line.lastIndexOf('}');
   if (start < 0 || end < start) return null;
   return line.slice(start, end + 1);
+}
+
+function emitSerialDebug(onDebug: SerialDebugHandler | undefined, message: string): void {
+  if (!DEBUG_SERIAL_LOGS) return;
+  onDebug?.(message);
 }
 
 function serialApi(): NitroSerialApi | undefined {
@@ -200,7 +207,7 @@ export function readSerialFrames(
         }
         const chunk = decoder.decode(value, { stream: true });
         const compactChunk = compactSerialText(chunk);
-        if (compactChunk) onDebug?.(`Serial RX bruto: ${compactChunk}`);
+        if (compactChunk) emitSerialDebug(onDebug, `Serial RX bruto: ${compactChunk}`);
         serialBuffer += chunk;
 
         let lineBreak = serialBuffer.indexOf('\n');
@@ -214,21 +221,21 @@ export function readSerialFrames(
             const jsonCandidate = jsonCandidateFromSerialLine(frameLine);
             if (!jsonCandidate) {
               const ignoredLine = compactSerialText(frameLine);
-              if (ignoredLine) onDebug?.(`Linha serial ignorada: ${ignoredLine}`);
+              if (ignoredLine) emitSerialDebug(onDebug, `Linha serial ignorada: ${ignoredLine}`);
               continue;
             }
 
             if (jsonCandidate !== frameLine) {
               const ignoredLine = compactSerialText(frameLine.replace(jsonCandidate, ''));
-              if (ignoredLine) onDebug?.(`Linha serial ignorada: ${ignoredLine}`);
+              if (ignoredLine) emitSerialDebug(onDebug, `Linha serial ignorada: ${ignoredLine}`);
             }
 
             const frame = parseHardwareFrame(jsonCandidate);
-            onDebug?.(`Frame JSON recebido: ${frame.event ?? frame.scanMode}`);
+            emitSerialDebug(onDebug, `Frame JSON recebido: ${frame.event ?? frame.scanMode}`);
             onFrame(frame);
           } catch (error) {
             const ignoredLine = compactSerialText(frameLine);
-            if (ignoredLine) onDebug?.(`Linha serial ignorada: ${ignoredLine}`);
+            if (ignoredLine) emitSerialDebug(onDebug, `Linha serial ignorada: ${ignoredLine}`);
           }
         }
       }
